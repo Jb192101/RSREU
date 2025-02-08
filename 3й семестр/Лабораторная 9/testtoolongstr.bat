@@ -1,0 +1,2 @@
+main.exe "kds;d;dkfkdld;cpp[d;d;d;d;fflep[[ws,dmfmvldmd8782378823932093903898929392919009093483493920293jdndnls dkf dk d dnc cjd dd fkddmmdmdd,,flldlssd;f;f.d.;e;e;d.d.f.ff,d,d,d,,d,d,d ,;c;clclclfkfjheb   884747474738392928447577378394958576564738ehneddfhfbf fjfdndcncndmdkd,cm f fnvnvnvhgwfwfscdvbnfnffkr fmf,clclmb gmkdmcmgf,f,ff;f;lhkkkhkhkhk" -create 3
+pause 

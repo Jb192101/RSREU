@@ -1,0 +1,2 @@
+Laba9.exe "dfgkfkd dkfjgdkfg 345 kfg 433453454 43kl 456456. +2344 dfg 3434 34534kertlertler kf qqqqqqqqq ffkf f 45? erlt23 234 3545 werewrwer dsf uueueueueu ue324, kdf 45 k34 34l43#$%34" -create 5
+pause 

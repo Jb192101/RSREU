@@ -1,0 +1,4 @@
+"Text with no command" 
+"First sentence. Now second sentence, abcdesd. And ne w Sentence. New Sentence." -delete 3
+"There are 12343 symbols 1323. sdfj 34 abc j7dsl. 123 ok 345, 12345. 7kkd 6 , ls 6 27d6, a23b 1234.  52545. Vot 987" -create
+"In this text replaced a 2 numbers that must be summed. Text for 123 get count 2vowels 567" -info
