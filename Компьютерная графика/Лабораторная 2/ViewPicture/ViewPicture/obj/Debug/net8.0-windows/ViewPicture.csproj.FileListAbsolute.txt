@@ -1,0 +1,16 @@
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\bin\Debug\net8.0-windows\ViewPicture.exe
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\bin\Debug\net8.0-windows\ViewPicture.deps.json
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\bin\Debug\net8.0-windows\ViewPicture.runtimeconfig.json
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\bin\Debug\net8.0-windows\ViewPicture.dll
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\bin\Debug\net8.0-windows\ViewPicture.pdb
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.Form1.resources
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.csproj.GenerateResource.cache
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.AssemblyInfoInputs.cache
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.AssemblyInfo.cs
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.csproj.CoreCompileInputs.cache
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.dll
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\refint\ViewPicture.dll
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.pdb
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ViewPicture.genruntimeconfig.cache
+C:\Users\gogat\source\repos\ViewPicture\ViewPicture\obj\Debug\net8.0-windows\ref\ViewPicture.dll
