@@ -1,0 +1,69 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\gogat\\source\\repos\\Lab2_CA\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{89508036-A663-45C8-ACE8-9FCA47DC4A8C}|Lab2_CA\\Lab2_CA.csproj|C:\\Users\\gogat\\source\\repos\\Lab2_CA\\lab2_ca\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{89508036-A663-45C8-ACE8-9FCA47DC4A8C}|Lab2_CA\\Lab2_CA.csproj|solutionrelative:lab2_ca\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{89508036-A663-45C8-ACE8-9FCA47DC4A8C}|Lab2_CA\\Lab2_CA.csproj|c:\\users\\gogat\\source\\repos\\lab2_ca\\lab2_ca\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89508036-A663-45C8-ACE8-9FCA47DC4A8C}|Lab2_CA\\Lab2_CA.csproj|solutionrelative:lab2_ca\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{89508036-A663-45C8-ACE8-9FCA47DC4A8C}|Lab2_CA\\Lab2_CA.csproj|C:\\Users\\gogat\\source\\repos\\Lab2_CA\\lab2_ca\\graphwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89508036-A663-45C8-ACE8-9FCA47DC4A8C}|Lab2_CA\\Lab2_CA.csproj|solutionrelative:lab2_ca\\graphwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "GraphWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\gogat\\source\\repos\\Lab2_CA\\Lab2_CA\\GraphWindow.xaml.cs",
+              "RelativeDocumentMoniker": "Lab2_CA\\GraphWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\gogat\\source\\repos\\Lab2_CA\\Lab2_CA\\GraphWindow.xaml.cs",
+              "RelativeToolTip": "Lab2_CA\\GraphWindow.xaml.cs",
+              "ViewState": "AQIAABIAAAAAAAAAAAAuwA8AAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-24T13:06:19.125Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\gogat\\source\\repos\\Lab2_CA\\Lab2_CA\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "Lab2_CA\\MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\gogat\\source\\repos\\Lab2_CA\\Lab2_CA\\MainWindow.xaml.cs",
+              "RelativeToolTip": "Lab2_CA\\MainWindow.xaml.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAoAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-24T11:23:17.967Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\gogat\\source\\repos\\Lab2_CA\\Lab2_CA\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "Lab2_CA\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\gogat\\source\\repos\\Lab2_CA\\Lab2_CA\\MainWindow.xaml",
+              "RelativeToolTip": "Lab2_CA\\MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-02-24T11:23:20.601Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

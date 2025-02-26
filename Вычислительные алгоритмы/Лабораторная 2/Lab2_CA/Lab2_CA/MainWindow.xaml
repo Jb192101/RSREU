@@ -1,0 +1,36 @@
+﻿<Window x:Class="Lab2_CA.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Lab2_CA"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        mc:Ignorable="d"
+        Title="Лабораторная работа 2 - Барышев" Height="450" Width="800">
+    <Grid Margin="0,-1,0,1">
+        <TextBlock HorizontalAlignment="Left" Margin="420,9,0,0" TextWrapping="Wrap" VerticalAlignment="Top"><Run Language="ru-ru" Text="Коэффициенты"/></TextBlock>
+        <TextBox x:Name="a_tb" HorizontalAlignment="Left" Margin="420,30,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" AutomationProperties.HelpText="a" Text="1"/>
+        <TextBox x:Name="b_tb" HorizontalAlignment="Left" Margin="420,53,0,0" TextWrapping="Wrap" Text="1" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="c_tb" HorizontalAlignment="Left" Margin="420,76,0,0" TextWrapping="Wrap" Text="1" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="d_tb" HorizontalAlignment="Left" Margin="420,99,0,0" TextWrapping="Wrap" Text="1" VerticalAlignment="Top" Width="120"/>
+        <TextBlock HorizontalAlignment="Left" Margin="10,10,0,0" TextWrapping="Wrap" Text="Задание (Вариант 2)" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="10,31,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="128" Width="399"><Run Text="Найти положительный корень уравнения x^5"/><Run Language="ru-ru" Text=" "/><Run Text="+"/><Run Language="ru-ru" Text=" "/><Run Text="x"/><Run Language="ru-ru" Text=" "/><Run Text="-"/><Run Language="ru-ru" Text=" "/><Run Text="0"/><Run Language="ru-ru" Text=".2 = 0"/><LineBreak/><Run Text="Для решения использовать"/><Run Text=" методы:"/><LineBreak/><Run Text="1) дихотомии"/><LineBreak/><Run Text="2) пропорциональных частей (хорд)"/><LineBreak/><Run Text="3) касательных (Ньютона)"/><LineBreak/><Run Text="4) модифицированный метод Ньютона"/><LineBreak/><Run Text="5) комбинированным методом"/><LineBreak/><Run Text="6) итерационным"/></TextBlock>
+        <Button x:Name="show_graph" Content="Отобразить график" HorizontalAlignment="Left" Margin="597,297,0,0" VerticalAlignment="Top" Width="134" Click="show_graph_Click"/>
+        <Button Content="Изменить данные" HorizontalAlignment="Left" Margin="414,297,0,0" VerticalAlignment="Top" Width="132" Click="Button_Click"/>
+        <TextBlock HorizontalAlignment="Left" Margin="598,9,0,0" TextWrapping="Wrap" Text="Результаты методов" VerticalAlignment="Top"/>
+        <TextBox x:Name="dihotomiya_label" IsReadOnly="True" HorizontalAlignment="Left" Margin="598,43,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="proportional_label" IsReadOnly="True" HorizontalAlignment="Left" Margin="598,86,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnlyCaretVisible="True"/>
+        <TextBox x:Name="newton_label" IsReadOnly="True" HorizontalAlignment="Left" Margin="598,128,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnlyCaretVisible="True"/>
+        <TextBox x:Name="modif_newton_label" IsReadOnly="True" HorizontalAlignment="Left" Margin="598,171,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnlyCaretVisible="True"/>
+        <TextBox x:Name="combine_label" IsReadOnly="True" HorizontalAlignment="Left" Margin="598,216,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnlyCaretVisible="True"/>
+        <TextBox x:Name="iterations_label" IsReadOnly="True" HorizontalAlignment="Left" Margin="598,264,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" IsReadOnlyCaretVisible="True"/>
+        <TextBlock x:Name="dig_text" HorizontalAlignment="Left" Margin="598,25,0,0" TextWrapping="Wrap" Text="Метод дихотомии" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="598,66,0,0" TextWrapping="Wrap" Text="Метод хорд" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="598,109,0,0" TextWrapping="Wrap" Text="Метод Ньютона" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="598,152,0,0" TextWrapping="Wrap" Text="Модиф. метод Ньютона" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="598,195,0,0" TextWrapping="Wrap" Text="Комбинированный метод" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="598,243,0,0" TextWrapping="Wrap" Text="Метод итераций" VerticalAlignment="Top"/>
+      
+       
+    </Grid>
+</Window>
