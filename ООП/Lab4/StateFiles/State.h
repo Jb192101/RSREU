@@ -7,8 +7,12 @@
 class State
 {
     protected:
-        Person* leader;
-        int countOfPeople;
+        Person leader;
+        static inline unsigned countOfAllChins {};
+        unsigned countOfChinsInState;
+    public:
+        State(Person _leader);
+        unsigned int getCountOfChinsInState();
 };
 
 #endif

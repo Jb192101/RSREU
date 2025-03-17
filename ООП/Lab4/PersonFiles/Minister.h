@@ -16,6 +16,12 @@ class Minister : public Parlamentman
 {
     private:
         Ministry min;
+    public:
+        Minister(int _age, std::string _name, Status _status, Party _party, Ministry _min) : Parlamentman(_age, _name, _status, _party), min(_min) {};
+
+        void setMin(Ministry _min);
+
+        Ministry getMin();
 };
 
 #endif

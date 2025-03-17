@@ -1,6 +1,20 @@
-#include "Confederation.h"
+// Персоны
+#include "Person.h"
+#include "Minister.h"
+#include "Parlamentman.h"
 #include "MemberOfMonarchFamily.h"
 
+// Государства
+#include "State.h"
+#include "Monarchy.h"
+#include "PresidentRepublic.h"
+#include "Republic.h"
+#include "Confederation.h"
+
+// Остальное
+#include "World.h"
+
 int main() {
-    MemberOfMonarchFamily m = MemberOfMonarchFamily(50, "Гнида");
+    Parlamentman parm = Parlamentman(50, "Шиз", speaker, RadicalLeft);
+    parm.getAge();
 }

@@ -1,12 +1,13 @@
 #include "Person.h"
+#include "State.h"
 #include <iostream>
 
 Person::Person(int _age, std::string _name)
 {
     if((_age > 0 && _age <= 100) && (!_name.empty()))
     {
-        age = _age;
-        name = _name;
+        this->age = _age;
+        this->name = _name;
     } else
     {
         std::cout << "Error : Incorrect input of values!" << std::endl;
@@ -15,19 +16,23 @@ Person::Person(int _age, std::string _name)
 
 int Person::getAge()
 {
-    return age;
+    return this->age;
 }
 
 std::string Person::getName()
 {
-    return name;
+    return this->name;
 }
 
 void Person::setName(std::string _newName) 
 {
     if(!_newName.empty())
     {
-        name = _newName;
+        this->name = _newName;
+    }
+    else
+    {
+        std::cout << "Error : Incorrect input of values!" << std::endl;
     }
 }
 
@@ -35,6 +40,10 @@ void Person::setAge(int _newAge)
 {
     if(_newAge > 0 && _newAge <= 100)
     {
-        age = _newAge;
+        this->age = _newAge;
+    }
+    else
+    {
+        std::cout << "Error : Incorrect input of values!" << std::endl;
     }
 }

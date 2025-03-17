@@ -8,11 +8,11 @@ class World
 {
     private:
         std::vector<State> states;
-        static int commonCountOfChins;
+        static inline unsigned commonCountOfChins {};
+        static inline unsigned countOfWorlds {};
     public:
-        World();
-        World(std::vector<State> states);
-        void addState(State state);
+        World(std::vector<State> _states);
+        void addState(State _state);
         int getCommonCount();
         std::vector<State> getStates();
 };

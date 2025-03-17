@@ -21,9 +21,16 @@ enum Party {
 class Parlamentman : public Person
 {
     protected:
-        std::string statePosition;
         Status status;
         Party party;
+    public:
+        Parlamentman(int _age, std::string _name, Status _status, Party _party) : Person(_age, _name), status(_status), party(_party) {};
+
+        Status getStatus();
+        Party getParty();
+
+        void setStatus(Status _status);
+        void setParty(Party _party);
 };
 
 #endif

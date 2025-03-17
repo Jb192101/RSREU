@@ -9,7 +9,7 @@ class Person
         int age;
         std::string name;
     public:
-        Person(int age, std::string name);
+        Person(int _age, std::string _name);
 
         //Геттеры, сеттеры
         int getAge();
