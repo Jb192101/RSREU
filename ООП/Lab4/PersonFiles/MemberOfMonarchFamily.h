@@ -3,25 +3,18 @@
 
 #include "Person.h"
 
-enum whoIs
-{
-    monarch,
-    heir
-};
-
 class MemberOfMonarchFamily : public Person
 {
     private:
         int priorityOfPrestol;
-        whoIs d;
     public:
-        MemberOfMonarchFamily(int _age, std::string _name, int _priority, whoIs _d) : Person(_age, _name), priorityOfPrestol(_priority), d(_d) {} ;
+        MemberOfMonarchFamily(int _age, std::string _name, int _priority) : Person(_name, _age), priorityOfPrestol(_priority) {} ;
 
-        int getPriority();
-        whoIs getPosition();
-
+        int getPriority() const;
         void setPriority(int _pr);
-        void setPosition(whoIs _wh);
+
+        std::string getPosition() const override;
+        std::string getDescription() const override;
 };
 
 #endif

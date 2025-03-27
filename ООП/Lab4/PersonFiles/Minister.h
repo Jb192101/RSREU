@@ -4,24 +4,17 @@
 #include <string>
 #include "Parlamentman.h"
 
-enum Ministry {
-    primeMinister,
-    minDef,
-    minHealth,
-    minTrans,
-    minFD
-};
-
 class Minister : public Parlamentman
 {
     private:
-        Ministry min;
+        std::string min;
+        bool isPrime;
     public:
-        Minister(int _age, std::string _name, Status _status, Party _party, Ministry _min) : Parlamentman(_age, _name, _status, _party), min(_min) {};
+        Minister(int _age, std::string& _name, bool& _status, std::string& _party, std::string& _min) : Parlamentman(_age, _name, _status, _party), min(_min) {};
 
-        void setMin(Ministry _min);
+        std::string getPosition() const override;
+        std::string getDescription() const override;
 
-        Ministry getMin();
 };
 
 #endif

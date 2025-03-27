@@ -3,12 +3,14 @@
 
 #include <string>
 #include "Republic.h"
-#include "Minister.h"
+#include "State.h"
 
-class PresidentRepublic : public Republic
+class PresidentRepublic : public State
 {
-    private:
-        std::vector<Minister> cabinetOfMinisters;
+    public:
+        PresidentRepublic(const std::string& _name) : State(_name) {};
+
+        std::string getGovernmentForm() const override;
 };
 
 #endif

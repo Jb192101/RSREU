@@ -7,14 +7,35 @@
 class World
 {
     private:
-        std::vector<State> states;
-        static inline unsigned commonCountOfChins {};
-        static inline unsigned countOfWorlds {};
+        struct StateNode {
+            State* state;
+            StateNode* next;
+            
+            StateNode(State* _state) : state(_state), next(nullptr) {}
+            
+            ~StateNode() {
+                delete state;
+            }
+        };
+        StateNode* head;
+        StateNode* tail;
+        size_t size;
+        
+        // Запрет копирования и присваивания
+        World(const World&) = delete;
+        World& operator=(const World&) = delete;
     public:
-        World(std::vector<State> _states);
-        void addState(State _state);
-        int getCommonCount();
-        std::vector<State> getStates();
+        World() : head(nullptr), tail(nullptr), size(0) {};
+        
+        ~World();
+        void addState(State* _state);
+        void removeState(size_t index);
+        void clear();
+        size_t getStateCount() const;
+        int getTotalOfficials() const;
+        State* getState(size_t index) const;
+        void printWorldInfo() const;
+        void forEach(void (*func)(State*)) const;
 };
 
 #endif

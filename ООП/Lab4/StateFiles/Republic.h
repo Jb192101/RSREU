@@ -2,14 +2,14 @@
 #define REPUBLIC_H
 
 #include <string>
-#include <vector>
 #include "State.h"
-#include "Parlamentman.h"
 
 class Republic : public State
 {
-    private:
-        std::vector<Parlamentman> Parlament;
+    public:
+        Republic(const std::string& _name) : State(_name) {}
+
+        std::string getGovernmentForm() const override;
 };
 
 #endif

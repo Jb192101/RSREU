@@ -8,8 +8,10 @@
 
 class Monarchy : public State
 {
-    private:
-        std::vector<MemberOfMonarchFamily> membersOfFamily;
+    public:
+        Monarchy(const std::string& _name) : State(_name) {};
+
+        std::string getGovernmentForm() const override;
 };
 
 #endif

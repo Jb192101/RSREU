@@ -10,16 +10,16 @@
 class Confederation : public State
 {
     private:
-        std::vector<State> membersOfConfederation;
-        std::vector<Parlamentman> palateOfPred;
+        std::vector<State*> memberStates;
     public:
-        Confederation(Person _leader, std::vector<State> _states, std::vector<Parlamentman> _parms) : State(_leader), membersOfConfederation(_states), palateOfPred(_parms) {};
-        void addState(State _state);
-        
-        void setStates(std::vector<State> _states);
-        
-        std::vector<State> getStates();
-        std::vector<Parlamentman> getParlamentmans();
+        Confederation(const std::string& _name) : State(_name) {};
+        void addMemberState(State* _state);
+        void removeMemberState(int _index);
+        std::string getGovernmentForm() const override;
+        int getTotalOfficials() const;
+        std::pair<int, int> getMinMaxOfficialAge() const;
+        double getAverageOfficialAge() const;
+        void printInfo() const;
 };
 
 #endif

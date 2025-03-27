@@ -2,7 +2,7 @@
 #include "State.h"
 #include <iostream>
 
-Person::Person(int _age, std::string _name)
+Person::Person(const std::string& _name, int _age)
 {
     if((_age > 0 && _age <= 100) && (!_name.empty()))
     {

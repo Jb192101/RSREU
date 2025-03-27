@@ -1,13 +1,13 @@
 #include "Parlamentman.h"
 #include <iostream>
 
-Parlamentman::Parlamentman(int _age, std::string _name, Status _status, Party _party) : Person(_age, _name), status(_status), party(_party)
+Parlamentman::Parlamentman(int _age, std::string& _name, bool& _status, std::string& _party) : Person(_name, _age), isSpeaker(_status), party(_party)
 {
-    if(_status < 2 && _status >= 0 && _party >= 0 && _party < 6 && _age <= 100 && _age > 0 && !name.empty())
+    if(_age <= 100 && _age > 0 && !name.empty())
     {
         this->name = _name;
         this->age = _age;
-        this->status = _status;
+        this->isSpeaker = _status;
         this->party = _party;
     }
     else
@@ -16,19 +16,19 @@ Parlamentman::Parlamentman(int _age, std::string _name, Status _status, Party _p
     }
 }
 
-Status Parlamentman::getStatus()
+std::string Parlamentman::getPosition() const
 {
-    return this->status;
+    return isSpeaker ? "Speaker" : "Parlamentarian";
 }
 
-Party Parlamentman::getParty()
+std::string Parlamentman::getDescription() const
 {
-    return this->party;
+    return getPosition() + ", " + (party.empty() ? "беспартийный" : "партия: " + party);
 }
 
-void Parlamentman::setParty(Party _party)
+void Parlamentman::setParty(std::string _party)
 {
-    if(_party >= 0 && _party < 6)
+    if(!_party.empty())
     {
         this->party = _party;
     }
@@ -38,14 +38,7 @@ void Parlamentman::setParty(Party _party)
     }
 }
 
-void Parlamentman::setStatus(Status _status)
+void Parlamentman::setStatus(bool _status)
 {
-    if(_status >= 0 && _status < 2)
-    {
-        this->status = _status;
-    }
-    else
-    {
-        std::cout << "Error : Incorrect input of values!" << std::endl;
-    }
+    this->isSpeaker = _status;
 }
