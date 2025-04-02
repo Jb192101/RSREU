@@ -11,7 +11,7 @@ class State
         std::string name;
         std::vector<Person*> officials;
     public:
-        State(const std::string& _name) : name(_name) {}
+        State(const std::string& _name);
         virtual ~State() {
             for (auto o : officials) delete o;
         }

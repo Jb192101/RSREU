@@ -6,6 +6,7 @@
 
 class World
 {
+    std::vector<State*> states;
     private:
         struct StateNode {
             State* state;
@@ -27,7 +28,6 @@ class World
     public:
         World() : head(nullptr), tail(nullptr), size(0) {};
         
-        ~World();
         void addState(State* _state);
         void removeState(size_t index);
         void clear();

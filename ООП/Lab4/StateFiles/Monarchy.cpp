@@ -2,5 +2,5 @@
 
 std::string Monarchy::getGovernmentForm() const
 {
-    return "Монархия";
+    return "Monarchy";
 }

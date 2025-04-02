@@ -1,20 +1,6 @@
 #include "MemberOfMonarchFamily.h"
 #include <iostream>
 
-MemberOfMonarchFamily::MemberOfMonarchFamily(int _age, std::string _name, int _priority) : Person(_name, _age), priorityOfPrestol(_priority)
-{
-    if(_age > 0 && _age <= 100 && _priority > 0)
-    {
-        this->age = _age;
-        this->name = _name;
-        this->priorityOfPrestol = _priority;
-    }
-    else
-    {
-        std::cout << "Error : Incorrect input of values!" << std::endl;
-    }
-}
-
 std::string MemberOfMonarchFamily::getDescription() const
 {
     return getPosition();
@@ -22,8 +8,8 @@ std::string MemberOfMonarchFamily::getDescription() const
 
 std::string MemberOfMonarchFamily::getPosition() const
 {
-    return priorityOfPrestol == 1 ? "Монарх" : 
-           "Член королевской семьи : " + std::to_string(priorityOfPrestol) + " в очереди на престол)";
+    return priorityOfPrestol == 1 ? "Monarch" : 
+           "Member of Royal Family: " + std::to_string(priorityOfPrestol) + " priority";
 }
 
 int MemberOfMonarchFamily::getPriority() const

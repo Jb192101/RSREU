@@ -10,7 +10,7 @@ class Parlamentman : public Person
         std::string party;
         bool isSpeaker;
     public:
-        Parlamentman(int _age, std::string& _name, bool& _status, std::string& _party) : Person(_name, _age), isSpeaker(_status), party(_party) {};
+        Parlamentman(int _age, std::string _name, bool _status, std::string _party) : Person(_name, _age), isSpeaker(_status), party(_party) {};
 
         std::string getPosition() const override;
         std::string getDescription() const override;

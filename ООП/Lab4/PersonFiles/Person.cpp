@@ -2,18 +2,6 @@
 #include "State.h"
 #include <iostream>
 
-Person::Person(const std::string& _name, int _age)
-{
-    if((_age > 0 && _age <= 100) && (!_name.empty()))
-    {
-        this->age = _age;
-        this->name = _name;
-    } else
-    {
-        std::cout << "Error : Incorrect input of values!" << std::endl;
-    }
-}
-
 int Person::getAge()
 {
     return this->age;

@@ -40,9 +40,9 @@ std::pair<int, int> Confederation::getMinMaxOfficialAge() const
     }
     
     for (const auto state : memberStates) {
-        auto [stateMin, stateMax] = state->getMinMaxOfficialAge();
-        minAge = std::min(minAge, stateMin);
-        maxAge = std::max(maxAge, stateMax);
+        std::pair<int, int> st = state->getMinMaxOfficialAge();
+        minAge = std::min(minAge, st.first);
+        maxAge = std::max(maxAge, st.second);
     }
     
     return {minAge, maxAge};
@@ -74,9 +74,8 @@ void Confederation::printInfo() const
     std::cout << "Form of government: " << getGovernmentForm() << "\n";
     std::cout << "General count of officials: " << getTotalOfficials() << "\n";
     
-    auto [minAge, maxAge] = getMinMaxOfficialAge();
-    std::cout << "Age of rulers: min=" << minAge << ", max=" << maxAge 
-         << ", medium=" << getAverageOfficialAge() << "\n";
+    std::pair<int, int> ages = getMinMaxOfficialAge();
+    std::cout << "Age of rulers: min=" << ages.first << ", max=" << ages.second << ", medium=" << getAverageOfficialAge() << "\n";
     
     std::cout << "Representatives of the Confederation:\n";
     for (size_t i = 0; i < officials.size(); ++i) {

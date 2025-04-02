@@ -1,7 +1,7 @@
 #include "State.h"
 #include <iostream>
 
-State::State(const std::string& _name) : name(_name)
+State::State(const std::string& _name)
 {
     if(!_name.empty())
     {
@@ -60,18 +60,18 @@ double State::getAverageOfficialAge() const {
 }
 
 void State::printInfo() const {
-    std::cout << "Государство: " << name << "\n";
-    std::cout << "Форма правления: " << getGovernmentForm() << "\n";
-    std::cout << "Количество управленцев: " << getTotalOfficials() << "\n";
+    std::cout << "State: " << name << "\n";
+    std::cout << "Form of ruling: " << getGovernmentForm() << "\n";
+    std::cout << "Count of rulers: " << getTotalOfficials() << "\n";
     
-    auto [minAge, maxAge] = getMinMaxOfficialAge();
-    std::cout << "Возраст управленцев: min=" << minAge << ", max=" << maxAge 
-         << ", средний=" << getAverageOfficialAge() << "\n";
+    std::pair<int, int> ages = getMinMaxOfficialAge();
+    std::cout << "Age of rulers: min=" << ages.first << ", max=" << ages.second
+         << ", medium=" << getAverageOfficialAge() << "\n";
     
-    std::cout << "Список управленцев:\n";
+    std::cout << "Rulers list:\n";
     for (size_t i = 0; i < officials.size(); ++i) {
         std::cout << "  " << i+1 << ". " << officials[i]->getName() 
-             << ", " << officials[i]->getAge() << " лет, "
+             << ", " << officials[i]->getAge() << " years old, "
              << officials[i]->getDescription() << "\n";
     }
     std::cout << "----------------------------------------\n";
