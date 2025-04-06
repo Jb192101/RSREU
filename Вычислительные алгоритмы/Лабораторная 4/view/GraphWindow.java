@@ -1,6 +1,7 @@
 package view;
 
 import javafx.stage.Stage;
+import viewmodel.SpecificContainer;
 import viewmodel.ViewModel;
 
 public class GraphWindow extends Stage {
@@ -8,5 +9,6 @@ public class GraphWindow extends Stage {
 
     public GraphWindow(ViewModel _vm) {
         this.viewModel = _vm;
+        SpecificContainer sC1 = viewModel.start();
     }
 }
