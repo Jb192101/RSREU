@@ -6,16 +6,16 @@ import view.GraphWindow;
 import viewmodel.ViewModel;
 
 public class Main extends Application {
-    public static void main(String[] args) {
-        launch();
+    @Override
+    public void start(Stage primaryStage) {
+        final int minX = 0;
+        final int maxX = 1;
+        final int n = 5;
+        GraphWindow graphWindow = new GraphWindow(new ViewModel(new Model(minX, maxX, n)));
+        graphWindow.show();
     }
 
-    @Override
-    public void start(Stage stage) {
-        int xStart = 0;
-        int xEnd = 1;
-        int n = 5;
-        GraphWindow graphWindow = new GraphWindow(new ViewModel(new Model(xStart, xEnd, n)));
-        graphWindow.show();
+    public static void main(String[] args) {
+        launch(args);
     }
 }

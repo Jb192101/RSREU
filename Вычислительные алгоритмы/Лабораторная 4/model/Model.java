@@ -16,6 +16,18 @@ public class Model implements Function, Interpolation {
         }
     }
 
+    public int getMinX() {
+        return this.minX;
+    }
+
+    public int getMaxX() {
+        return this.maxX;
+    }
+
+    public int getN() {
+        return this.n;
+    }
+
     @Override
     public double f(double x) {
         return Math.sin(Math.PI*Math.cos(Math.PI*x));
@@ -23,7 +35,7 @@ public class Model implements Function, Interpolation {
 
     @Override
     public List<Double> makePointsX() {
-        List<Double> res = new ArrayList<>();
+        ArrayList<Double> res = new ArrayList<>();
         double h = (double) (this.maxX - this.minX)/this.n;
         double x = this.minX;
         while(x < this.maxX + h / 3) {
@@ -67,8 +79,8 @@ public class Model implements Function, Interpolation {
 
         List<Double> x, y;
         for(int i = n-1; i >= 0; i--) {
-            x = _xs.subList(0, i);
-            y = _ys.subList(0, i);
+            x = _xs.subList(i, n-1);
+            y = _ys.subList(i, n-1);
             double temp = this.dividedDifferences(x, y);
             for(int j = i + 1; j < n; j++) {
                 temp *= _current - _xs.get(j);

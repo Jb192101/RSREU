@@ -12,15 +12,19 @@ public class ViewModel {
         this.model = _m;
     }
 
+    public Model getModel() {
+        return model;
+    }
+
     public SpecificContainer<Double> start() {
         List<Double> args = model.makePointsX();
         List<Double> ys = model.makePointsY(args);
 
         List<Double> arg = new ArrayList<>();
 
-        double x0 = args.getFirst() - 0.05;
-        double hx = 0.0005;
-        double xn = args.getLast() + 0.05;
+        double x0 = args.getFirst();
+        double hx = 0.005;
+        double xn = args.getLast();
 
         double x = x0;
         while(x < xn + hx / 3) {
@@ -28,9 +32,9 @@ public class ViewModel {
             x += hx;
         }
 
-        ArrayList<Double> y1 = (ArrayList<Double>) arg.stream().map(e -> model.f(e)).toList();
-        ArrayList<Double> y2 = (ArrayList<Double>) arg.stream().map(e -> model.backwardsInterpolation(e, args, ys)).toList();
+        List<Double> y1 = arg.stream().map(e -> model.f(e)).toList();
+        List<Double> y2 = arg.stream().map(e -> model.backwardsInterpolation(e, args, ys)).toList();
 
-        return new SpecificContainer<>(y1, y2);
+        return new SpecificContainer<>(new ArrayList<>(y1), new ArrayList<>(y2));
     }
 }

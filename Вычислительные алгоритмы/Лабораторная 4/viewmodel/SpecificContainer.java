@@ -3,8 +3,8 @@ package viewmodel;
 import java.util.ArrayList;
 
 public class SpecificContainer<T> {
-    private ArrayList<T> ys1;
-    private ArrayList<T> ys2;
+    private ArrayList<T> ys1; // Игрики первоначальной функции
+    private ArrayList<T> ys2; // Игрики интерполирующей функции
 
     public SpecificContainer(ArrayList<T> _list1, ArrayList<T> _list2) {
         if(_list1.size() == _list2.size()) {
