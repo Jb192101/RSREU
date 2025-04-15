@@ -1,0 +1,21 @@
+.root {
+    -fx-font-family: "Arial";
+    -fx-base: #ececec;
+}
+
+.button {
+    -fx-min-width: 80px;
+    -fx-padding: 5px 10px;
+}
+
+.slider {
+    -fx-show-tick-marks: true;
+}
+
+.label {
+    -fx-font-weight: bold;
+}
+
+.image-view {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 0);
+}
