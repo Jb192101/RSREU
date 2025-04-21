@@ -7,45 +7,45 @@ public class Model implements IFunction {
     private float b;
     private float x0;
     private float xn;
-    private float h;
     private float y0;
 
-    public Model(float _a, float _b, float _x0, float _xn, float _h, float _y0) {
+    public Model(float _a, float _b, float _x0, float _xn, float _y0) {
         this.a = _a;
         this.b = _b;
         this.x0 = _x0;
         this.xn = _xn;
-        this.h = _h;
         this.y0 = _y0;
     }
 
     @Override
-    public float f(float _x) {
-        return 0;
+    public float f(float _x, float _y) {
+        return (float) (_y*Math.log(_y)/_x);
     }
 
     @Override
-    public double k1(float _x, float _y) {
-        return 0;
+    public double k1(float _x, float _y, float _h) {
+        return _h*f(_x, _y);
     }
 
     @Override
-    public double k2(float _x, float _y) {
-        return 0;
+    public double k2(float _x, float _y, float _h) {
+        return _h*f(_x + _h/2, (float) (_y + k1(_x, _y, _h) / 2));
     }
 
     @Override
-    public double k3(float _x, float _y) {
-        return 0;
+    public double k3(float _x, float _y, float _h) {
+        return _h*f(_x + _h/2, (float) (_y + k2(_x, _y, _h) / 2));;
     }
 
     @Override
-    public double k4(float _x, float _y) {
-        return 0;
+    public double k4(float _x, float _y, float _h) {
+        return _h*f(_x + _h/2, (float) (_y + k3(_x, _y, _h)));
     }
 
     @Override
-    public XYContainer methodRungeKutt() {
+    public XYContainer methodRungeKutt(float _h) {
+        float h = _h;
+
         ArrayList<Float> xs = new ArrayList<>();
         float x = x0;
         while(x < xn + h/3) {
