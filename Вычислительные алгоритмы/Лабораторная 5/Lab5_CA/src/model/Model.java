@@ -57,8 +57,8 @@ public class Model implements IFunction {
 
         float y;
         for (int i = 0; i < xs.size()-1; i++) {
-            y = (float) (ys.get(i) + (k1(xs.get(i), ys.get(i)) + 2 * k2(xs.get(i), ys.get(i)) +
-                    2 * k3(xs.get(i), ys.get(i)) + k4(xs.get(i), ys.get(i)) / 6));
+            y = (float) (ys.get(i) + (k1(xs.get(i), ys.get(i), h) + 2 * k2(xs.get(i), ys.get(i), h) +
+                    2 * k3(xs.get(i), ys.get(i), h) + k4(xs.get(i), ys.get(i), h) / 6));
 
             ys.add(y);
         }
