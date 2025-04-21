@@ -2,14 +2,14 @@ package model;
 
 import java.util.ArrayList;
 
-public class Model implements IFunction {
+public class ModelTaskFirst implements IFunction {
     private float a;
     private float b;
     private float x0;
     private float xn;
     private float y0;
 
-    public Model(float _a, float _b, float _x0, float _xn, float _y0) {
+    public ModelTaskFirst(float _a, float _b, float _x0, float _xn, float _y0) {
         this.a = _a;
         this.b = _b;
         this.x0 = _x0;
@@ -34,7 +34,7 @@ public class Model implements IFunction {
 
     @Override
     public double k3(float _x, float _y, float _h) {
-        return _h*f(_x + _h/2, (float) (_y + k2(_x, _y, _h) / 2));;
+        return _h*f(_x + _h/2, (float) (_y + k2(_x, _y, _h) / 2));
     }
 
     @Override
@@ -64,5 +64,15 @@ public class Model implements IFunction {
         }
 
         return new XYContainer(xs, ys);
+    }
+
+    @Override
+    public double f2_1(float _x, float _y2) {
+        return Math.atan(_x*_x + _y2*_y2);
+    }
+
+    @Override
+    public double f2_2(float _x, float _y1) {
+        return Math.sin(_x + _y1);
     }
 }
