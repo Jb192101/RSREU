@@ -65,14 +65,4 @@ public class ModelTaskFirst implements IFunction {
 
         return new XYContainer(xs, ys);
     }
-
-    @Override
-    public double f2_1(float _x, float _y2) {
-        return Math.atan(_x*_x + _y2*_y2);
-    }
-
-    @Override
-    public double f2_2(float _x, float _y1) {
-        return Math.sin(_x + _y1);
-    }
 }

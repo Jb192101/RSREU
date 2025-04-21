@@ -1,4 +1,57 @@
 package model;
 
-public class ModelTaskSecond {
+import java.util.ArrayList;
+
+public class ModelTaskSecond implements IFunctionTaskSecond {
+    private float a;
+    private float b;
+
+    @Override
+    public double f21(float _x, float _y2) {
+        return Math.atan(_x*_x + _y2*_y2);
+    }
+
+    @Override
+    public double f22(float _x, float _y1) {
+        return Math.sin(_x + _y1);
+    }
+
+    @Override
+    public XYContainer algoRungeKutt(float _h, float _y10, float _y20) {
+        ArrayList<Float> xValues = new ArrayList<>();
+        xValues.add(this.a);
+        ArrayList<Float> y1Values = new ArrayList<>();
+        y1Values.add(_y10);
+        ArrayList<Float> y2Values = new ArrayList<>();
+        y2Values.add(_y20);
+
+        float x = this.a;
+        float y1 = _y10;
+        float y2 = _y20;
+
+        float k1, m1, k2, m2, k3, m3, k4, m4;
+        while(x < this.b) {
+            k1 = (float) (_h * f21(x, y2));
+            m1 = (float) (_h * f22(x, y1));
+
+            k2 = (float) (_h * f21(x, y2));
+            m2 = (float) (_h * f22(x, y1));
+
+            k3 = (float) (_h * f21(x, y2));
+            m3 = (float) (_h * f22(x, y1));
+
+            k4 = (float) (_h * f21(x, y2));
+            m4 = (float) (_h * f22(x, y1));
+
+            y1 += (k1 + 2 * k2 + 2 * k3 + k4) / 6;
+            y2 += (m1 + 2 * m2 + 2 * m3 + m4) / 6;
+            x += _h;
+
+            xValues.add(x);
+            y1Values.add(y1);
+            y2Values.add(y2);
+        }
+
+        return new XYContainer(xValues, y1Values, y2Values);
+    }
 }
