@@ -1,6 +1,7 @@
 package viewmodel;
 
 import model.ModelTaskSecond;
+import model.XYContainer;
 import view.WindowTaskSecond;
 
 public class ViewModelTaskSecond implements IOpenWindow {
@@ -12,6 +13,11 @@ public class ViewModelTaskSecond implements IOpenWindow {
 
     @Override
     public void openWindow() {
-        WindowTaskSecond windowTaskFirst = new WindowTaskSecond(this);
+        WindowTaskSecond windowTaskSecond = new WindowTaskSecond(this);
+        windowTaskSecond.start();
+    }
+
+    public XYContainer taskSolving(double _h, double _y10, double _y20) {
+        return mts.algoRungeKutt(_h, _y10, _y20);
     }
 }
