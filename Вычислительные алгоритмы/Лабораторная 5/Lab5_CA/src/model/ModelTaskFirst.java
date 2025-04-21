@@ -2,16 +2,12 @@ package model;
 
 import java.util.ArrayList;
 
-public class ModelTaskFirst implements IFunction {
-    private float a;
-    private float b;
+public class ModelTaskFirst implements IFunctionTaskFirst {
     private float x0;
     private float xn;
     private float y0;
 
-    public ModelTaskFirst(float _a, float _b, float _x0, float _xn, float _y0) {
-        this.a = _a;
-        this.b = _b;
+    public ModelTaskFirst(float _x0, float _xn, float _y0) {
         this.x0 = _x0;
         this.xn = _xn;
         this.y0 = _y0;

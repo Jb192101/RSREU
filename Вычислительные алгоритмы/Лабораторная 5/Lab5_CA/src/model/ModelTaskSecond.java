@@ -6,6 +6,13 @@ public class ModelTaskSecond implements IFunctionTaskSecond {
     private float a;
     private float b;
 
+    public ModelTaskSecond(float _a, float _b) {
+        if(_a <= _b) {
+            this.a = _a;
+            this.b = _b;
+        }
+    }
+
     @Override
     public double f21(float _x, float _y2) {
         return Math.atan(_x*_x + _y2*_y2);
@@ -34,14 +41,14 @@ public class ModelTaskSecond implements IFunctionTaskSecond {
             k1 = (float) (_h * f21(x, y2));
             m1 = (float) (_h * f22(x, y1));
 
-            k2 = (float) (_h * f21(x, y2));
-            m2 = (float) (_h * f22(x, y1));
+            k2 = (float) (_h * f21(x + _h / 2, y2 + m1 / 2));
+            m2 = (float) (_h * f22(x + _h / 2, y1 + k1 / 2));
 
-            k3 = (float) (_h * f21(x, y2));
-            m3 = (float) (_h * f22(x, y1));
+            k3 = (float) (_h * f21(x + _h / 2, y2 + m2 / 2));
+            m3 = (float) (_h * f22(x + _h / 2, y1 + k2 / 2));
 
-            k4 = (float) (_h * f21(x, y2));
-            m4 = (float) (_h * f22(x, y1));
+            k4 = (float) (_h * f21(x + _h, y2 + m3));
+            m4 = (float) (_h * f22(x + _h, y1 + k3));
 
             y1 += (k1 + 2 * k2 + 2 * k3 + k4) / 6;
             y2 += (m1 + 2 * m2 + 2 * m3 + m4) / 6;
