@@ -1,6 +1,7 @@
 package viewmodel;
 
 import model.ModelTaskSecond;
+import view.WindowTaskSecond;
 
 public class ViewModelTaskSecond implements IOpenWindow {
     private ModelTaskSecond mts;
@@ -11,6 +12,6 @@ public class ViewModelTaskSecond implements IOpenWindow {
 
     @Override
     public void openWindow() {
-
+        WindowTaskSecond windowTaskFirst = new WindowTaskSecond(this);
     }
 }
