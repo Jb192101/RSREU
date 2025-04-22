@@ -10,7 +10,6 @@ import model.XYContainer;
 import viewmodel.ViewModelTaskFirst;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class WindowTaskFirst extends Stage {
     private final float h = 0.1f;
@@ -38,9 +37,9 @@ public class WindowTaskFirst extends Stage {
         ArrayList<Double> yData3 = new ArrayList<>(xy3.getYs());
 
         // Создаем графики
-        LineChart<Number, Number> chart1 = createChartFromXY("График 1", "X", "Y", xData1, yData1);
-        LineChart<Number, Number> chart2 = createChartFromXY("График 2", "X", "Y", xData2, yData2);
-        LineChart<Number, Number> chart3 = createChartFromXY("График 3", "X", "Y", xData3, yData3);
+        LineChart<Number, Number> chart1 = createChartFromXY("График c шагом h", "X", "Y", xData1, yData1);
+        LineChart<Number, Number> chart2 = createChartFromXY("График с шагом 2h", "X", "Y", xData2, yData2);
+        LineChart<Number, Number> chart3 = createChartFromXY("График с шагом h/2", "X", "Y", xData3, yData3);
 
         // Размещаем графики вертикально
         VBox root = new VBox(10, chart1, chart2, chart3);
@@ -48,7 +47,7 @@ public class WindowTaskFirst extends Stage {
 
         // Настраиваем и показываем окно
         Scene scene = new Scene(root, 800, 600);
-        primaryStage.setTitle("Графики по отдельным массивам X и Y");
+        primaryStage.setTitle("Лабораторная работа 5 - Барышев");
         primaryStage.setScene(scene);
         primaryStage.show();
     }

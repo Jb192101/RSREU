@@ -38,24 +38,32 @@ public class WindowTaskSecond extends Stage implements IOpenWindow {
         // Данные для графиков (отдельные массивы X и Y)
         ArrayList<Double> xData1 = new ArrayList<>(xy1.getXs());
         ArrayList<Double> yData1 = new ArrayList<>(xy1.getYs());
+        ArrayList<Double> y2Data1 = new ArrayList<>(xy1.getYs2());
 
         ArrayList<Double> xData2 = new ArrayList<>(xy2.getXs());
         ArrayList<Double> yData2 = new ArrayList<>(xy2.getYs());
+        ArrayList<Double> y2Data2 = new ArrayList<>(xy2.getYs2());
 
         ArrayList<Double> xData3 = new ArrayList<>(xy3.getXs());
         ArrayList<Double> yData3 = new ArrayList<>(xy3.getYs());
+        ArrayList<Double> y2Data3 = new ArrayList<>(xy3.getYs2());
 
         // Создаем графики
-        LineChart<Number, Number> chart1 = createChartFromXY("График 1", "X", "Y", xData1, yData1);
-        LineChart<Number, Number> chart2 = createChartFromXY("График 2", "X", "Y", xData2, yData2);
-        LineChart<Number, Number> chart3 = createChartFromXY("График 3", "X", "Y", xData3, yData3);
+        LineChart<Number, Number> chart11 = createChartFromXY("График 1 - y1", "X", "Y", xData1, yData1);
+        LineChart<Number, Number> chart12 = createChartFromXY("График 1 - y2", "X", "Y", xData1, y2Data1);
+
+        LineChart<Number, Number> chart21 = createChartFromXY("График 2 - y1", "X", "Y", xData2, yData2);
+        LineChart<Number, Number> chart22 = createChartFromXY("График 2 - y2", "X", "Y", xData2, y2Data2);
+
+        LineChart<Number, Number> chart31 = createChartFromXY("График 3 - y1", "X", "Y", xData3, yData3);
+        LineChart<Number, Number> chart32 = createChartFromXY("График 3 - y2", "X", "Y", xData3, y2Data3);
 
         // Размещаем графики вертикально
-        VBox root = new VBox(10, chart1, chart2, chart3);
+        VBox root = new VBox(10, chart11, chart12, chart21, chart22, chart31, chart32);
         root.setStyle("-fx-padding: 10;");
 
         // Настраиваем и показываем окно
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 800, 900);
         primaryStage.setTitle("Графики по отдельным массивам X и Y");
         primaryStage.setScene(scene);
         primaryStage.show();

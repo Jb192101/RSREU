@@ -59,6 +59,8 @@ public class ModelTaskFirst implements IFunctionTaskFirst {
             ys.add(y);
         }
 
+        //System.out.println(ys);
+
         return new XYContainer(xs, ys);
     }
 }

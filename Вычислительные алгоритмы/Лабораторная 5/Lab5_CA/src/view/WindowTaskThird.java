@@ -57,7 +57,7 @@ public class WindowTaskThird extends Stage implements IOpenWindow {
 
         // Настраиваем и показываем окно
         Scene scene = new Scene(root, 800, 600);
-        primaryStage.setTitle("Графики по отдельным массивам X и Y");
+        primaryStage.setTitle("Лабораторная 5 - Барышев");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
