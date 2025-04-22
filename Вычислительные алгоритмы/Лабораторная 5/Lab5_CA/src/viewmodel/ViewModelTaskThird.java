@@ -17,6 +17,6 @@ public class ViewModelTaskThird implements IOpenWindow {
     }
 
     public XYContainer taskSolving(double _h, double _y10, double _y20) {
-        return mtt.algoRungeKutt(_h, _y10, _y20);
+        return null;
     }
 }
