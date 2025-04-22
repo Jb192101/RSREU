@@ -25,7 +25,7 @@ public class Main extends Application {
         Stage primaryStage = new Stage();
         this.vmtf = new ViewModelTaskFirst(new ModelTaskFirst(1, 2.6f, (float) Math.E));
         this.vmts = new ViewModelTaskSecond(new ModelTaskSecond(0, 2));
-        this.vmtt = new ViewModelTaskThird(new ModelTaskThird());
+        this.vmtt = new ViewModelTaskThird(new ModelTaskThird(0, 1));
 
         // Создаем кнопки меню
         Button button1 = new Button("Задание 1");

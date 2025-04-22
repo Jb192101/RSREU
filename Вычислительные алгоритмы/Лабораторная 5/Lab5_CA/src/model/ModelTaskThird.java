@@ -26,9 +26,9 @@ public class ModelTaskThird implements IFunctionTaskThird {
         ArrayList<Double> xs = new ArrayList<>();
         xs.add(_x0);
         ArrayList<Double> ys1 = new ArrayList<>();
-        xs.add(_y10);
+        ys1.add(_y10);
         ArrayList<Double> ys2 = new ArrayList<>();
-        xs.add(_y20);
+        ys2.add(_y20);
 
         int N = (int) ((_xn - _x0) / _h);
 

@@ -26,7 +26,7 @@ public class WindowTaskThird extends Stage implements IOpenWindow {
 
     @Override
     public void openWindow() {
-
+        start();
     }
 
     public void start() {

@@ -14,9 +14,10 @@ public class ViewModelTaskThird implements IOpenWindow {
     @Override
     public void openWindow() {
         WindowTaskThird windowTaskThird = new WindowTaskThird(this);
+        windowTaskThird.start();
     }
 
     public XYContainer taskSolving(double _h, double _y10, double _y20) {
-        return null;
+        return mtt.algoRungeKutt(-1*Math.PI/2, 0, _y10, _y20, _h);
     }
 }
