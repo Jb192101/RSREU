@@ -24,11 +24,9 @@ public class MainView {
     }
 
     private void initializeUI() {
-        // Create main container
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        // Image views
         HBox imageBox = new HBox(10);
         originalImageView = new ImageView();
         originalImageView.setFitWidth(400);
@@ -44,11 +42,9 @@ public class MainView {
         imageBox.setAlignment(Pos.CENTER);
         root.setCenter(imageBox);
 
-        // Controls
         VBox controlsBox = new VBox(10);
         controlsBox.setPadding(new Insets(10));
 
-        // Hue control
         VBox hueBox = new VBox(5);
         hueBox.getChildren().add(new Label("Hue Adjustment (-180 to 180)"));
         hueSlider = new Slider(-180, 180, 0);
@@ -58,7 +54,6 @@ public class MainView {
         hueSlider.setBlockIncrement(10);
         hueBox.getChildren().add(hueSlider);
 
-        // Saturation control
         VBox saturationBox = new VBox(5);
         saturationBox.getChildren().add(new Label("Saturation Adjustment (-1 to 1)"));
         saturationSlider = new Slider(-1, 1, 0);
@@ -68,7 +63,6 @@ public class MainView {
         saturationSlider.setBlockIncrement(0.1);
         saturationBox.getChildren().add(saturationSlider);
 
-        // Lightness control
         VBox lightnessBox = new VBox(5);
         lightnessBox.getChildren().add(new Label("Lightness Adjustment (-1 to 1)"));
         lightnessSlider = new Slider(-1, 1, 0);
