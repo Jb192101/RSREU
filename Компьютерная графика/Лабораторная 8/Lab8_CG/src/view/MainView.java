@@ -46,7 +46,7 @@ public class MainView {
         controlsBox.setPadding(new Insets(10));
 
         VBox hueBox = new VBox(5);
-        hueBox.getChildren().add(new Label("Hue Adjustment (-180 to 180)"));
+        hueBox.getChildren().add(new Label("Оттенок (-180 до 180)"));
         hueSlider = new Slider(-180, 180, 0);
         hueSlider.setShowTickLabels(true);
         hueSlider.setShowTickMarks(true);
@@ -55,7 +55,7 @@ public class MainView {
         hueBox.getChildren().add(hueSlider);
 
         VBox saturationBox = new VBox(5);
-        saturationBox.getChildren().add(new Label("Saturation Adjustment (-1 to 1)"));
+        saturationBox.getChildren().add(new Label("Насыщение (-1 до 1)"));
         saturationSlider = new Slider(-1, 1, 0);
         saturationSlider.setShowTickLabels(true);
         saturationSlider.setShowTickMarks(true);
@@ -64,7 +64,7 @@ public class MainView {
         saturationBox.getChildren().add(saturationSlider);
 
         VBox lightnessBox = new VBox(5);
-        lightnessBox.getChildren().add(new Label("Lightness Adjustment (-1 to 1)"));
+        lightnessBox.getChildren().add(new Label("Яркость (-1 до 1)"));
         lightnessSlider = new Slider(-1, 1, 0);
         lightnessSlider.setShowTickLabels(true);
         lightnessSlider.setShowTickMarks(true);
