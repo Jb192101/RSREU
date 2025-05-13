@@ -15,7 +15,6 @@ public class LineViewModel {
     private final DoubleProperty pivotY = new SimpleDoubleProperty();
 
     public LineViewModel() {
-        // Инициализация начальной линии
         originalLine.set(new Line(100, 100, 300, 200));
         rotatedLine.set(new Line(100, 100, 300, 200));
 

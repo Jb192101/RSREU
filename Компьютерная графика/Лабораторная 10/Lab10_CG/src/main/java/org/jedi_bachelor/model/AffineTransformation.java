@@ -2,25 +2,28 @@ package org.jedi_bachelor.model;
 
 public class AffineTransformation {
     public static Line rotateLine(Line line, double angleDegrees, double pivotX, double pivotY) {
-        double angleRad = Math.toRadians(angleDegrees);
-        double cos = Math.cos(angleRad);
-        double sin = Math.sin(angleRad);
+        return line;
+    }
 
-        double startX = line.getStartX() - pivotX;
-        double startY = line.getStartY() - pivotY;
-        double endX = line.getEndX() - pivotX;
-        double endY = line.getEndY() - pivotY;
+    private double[][] multiplicationMatrixs(double[][] m1, double[][] m2) {
+        int l11 = m1.length;
+        int l12 = m1[0].length;
+        int l21 = m2.length;
+        int l22 = m2[0].length;
 
-        double newStartX = startX * cos - startY * sin;
-        double newStartY = startX * sin + startY * cos;
-        double newEndX = endX * cos - endY * sin;
-        double newEndY = endX * sin + endY * cos;
+        if(l12 != l21)
+            return new double[1][1];
 
-        newStartX += pivotX;
-        newStartY += pivotY;
-        newEndX += pivotX;
-        newEndY += pivotY;
+        double[][] result = new double[l11][l22];
 
-        return new Line(newStartX, newStartY, newEndX, newEndY);
+        for(int i = 0; i < l11; i++) {
+            for(int j = 0; j < l22; j++) {
+                for(int k = 0; k < l12; k++) {
+                    result[i][j] += m1[i][k] * m2[k][j];
+                }
+            }
+        }
+
+        return result;
     }
 }
