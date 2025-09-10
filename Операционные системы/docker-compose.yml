@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  go-app:
+    image: golang:1.21-alpine
+    container_name: go-development
+    working_dir: /app
+    volumes:
+      - ./main.go:/app/main.go
+      - ./go-output:/app/output
+    command: >
+      sh -c "
+      go mod init example.com/app &&
+      go build -o output/app main.go &&
+      echo 'Компиляция завершена!' &&
+      /app/output/app
+      "
+    stdin_open: true
+    tty: true
