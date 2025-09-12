@@ -1,19 +1,32 @@
 version: '3.8'
 
 services:
-  go-app:
-    image: golang:1.21-alpine
-    container_name: go-development
+  go-fyne-app:
+    image: ubuntu:22.04
+    container_name: go-fyne-development
     working_dir: /app
     volumes:
       - ./main.go:/app/main.go
       - ./go-output:/app/output
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - DISPLAY=:0
+      - XAUTHORITY=/tmp/.Xauthority
     command: >
-      sh -c "
-      go mod init example.com/app &&
-      go build -o output/app main.go &&
-      echo 'Компиляция завершена!' &&
-      /app/output/app
+      /bin/bash -c "
+      apt-get update && 
+      apt-get install -y wget libgl1-mesa-dev xorg-dev libgtk-3-dev && 
+      wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz -O /tmp/go.tar.gz && 
+      tar -C /usr/local -xzf /tmp/go.tar.gz && 
+      export PATH=/usr/local/go/bin:$$PATH && 
+      export GOPROXY=direct && 
+      export GOSUMDB=off && 
+      cd /app && 
+      go mod init fyne-app && 
+      go get fyne.io/fyne/v2 && 
+      go build -o output/app main.go && 
+      echo 'Компиляция завершена с поддержкой Fyne!' && 
+      echo 'Для запуска графического приложения используйте: docker-compose run go-fyne-app /app/output/app'
       "
     stdin_open: true
     tty: true
