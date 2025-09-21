@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: my-postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: superadmin           		
+      POSTGRES_PASSWORD: supersecretpassword  	
+      POSTGRES_DB: mydatabase        		
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  
+    ports:
+      - "5432:5432"  
+    networks:
+      - postgres-network
+
+  # Сервис для веб-интерфейса управления pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: my-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: example@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: SUPERaDmiNpASSword
+    ports:
+      - "8080:80"  # Веб-интерфейс pgAdmin будет доступен на localhost:8080
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin  # Сохраняем настройки pgAdmin
+    networks:
+      - postgres-network
+    depends_on:
+      - postgres
+
+# Объявляем named volumes для постоянного хранения данных
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+# Создаем сеть для удобного взаимодействия контейнеров
+networks:
+  postgres-network:
