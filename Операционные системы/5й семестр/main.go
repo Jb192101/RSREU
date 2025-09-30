@@ -334,9 +334,11 @@ func (tm *TaskManager) refreshProcesses() {
 					process.Memory = kb / 1024 // Конвертация в MB
 				}
 			} else if strings.HasPrefix(line, "State:") {
-				// Добавляем состояние процесса
+				// ДОБАВЛЯЕМ ПОЛУЧЕНИЕ СТАТУСА
 				state := strings.TrimSpace(strings.TrimPrefix(line, "State:"))
-				process.Status = getProcessState(state)
+				if len(state) > 0 {
+					process.Status = getProcessState(string(state[0]))
+				}
 			}
 		}
 
@@ -405,14 +407,10 @@ func (tm *TaskManager) sortProcesses(processes []ProcessInfo) {
 
 func (tm *TaskManager) updateUI() {
 	infoText := fmt.Sprintf("[yellow]Memory: [white]%.1f/%.1f MB (%.1f%%) | "+
-		"[yellow]CPU: [white]%.1f%% | "+
-		"[yellow]Load: [white]%s | "+
-		"[yellow]Processes: [white]%d/%d | "+
+		"[yellow]Processes: [white]%d | "+
 		"[yellow]Uptime: [white]%s",
 		tm.systemInfo.UsedMemory, tm.systemInfo.TotalMemory, tm.systemInfo.MemoryUsage,
-		tm.systemInfo.CPUUsage,
-		tm.systemInfo.Load1,
-		tm.systemInfo.RunningProcesses, tm.systemInfo.TotalProcesses,
+		tm.systemInfo.TotalProcesses,
 		tm.systemInfo.Uptime)
 
 	tm.infoView.SetText(infoText)
@@ -424,20 +422,51 @@ func (tm *TaskManager) updateUI() {
 		sortIndicator = "↑"
 	}
 
-	tm.processList.SetTitle(fmt.Sprintf(" Processes (Sort: %s %s) - %d total ", strings.ToUpper(tm.sortBy), sortIndicator, len(tm.processes)))
+	tm.processList.SetTitle(fmt.Sprintf(" Processes (Sort: %s %s) - %d total ",
+		strings.ToUpper(tm.sortBy), sortIndicator, len(tm.processes)))
 
 	for i, proc := range tm.processes {
-		if i >= 25 { // Показываем только топ-25 процессов
+		if i >= 25 {
 			break
 		}
 
-		mainText := fmt.Sprintf("[white]%6d [yellow]%-20s [green]%-8s",
-			proc.PID, truncateString(proc.Name, 20), truncateString(proc.User, 8))
+		// ДОБАВЛЯЕМ ЦВЕТНОЕ ОТОБРАЖЕНИЕ СТАТУСА
+		statusColor := getStatusColor(proc.Status)
 
-		secondaryText := fmt.Sprintf("[gray]CPU: %.1f%% | Mem: %.1f MB | %s",
-			proc.CPU, proc.Memory, truncateString(proc.Command, 40))
+		mainText := fmt.Sprintf("[white]%6d [yellow]%-20s [green]%-8s [%s]%-12s",
+			proc.PID,
+			truncateString(proc.Name, 20),
+			truncateString(proc.User, 8),
+			statusColor,
+			truncateString(proc.Status, 12))
+
+		secondaryText := fmt.Sprintf("[gray]CPU: %.1f%% | Mem: %.1f MB | %s | Stat: %s",
+			proc.CPU, proc.Memory, truncateString(proc.Command, 40), proc.Status)
 
 		tm.processList.AddItem(mainText, secondaryText, 0, nil)
+	}
+}
+
+func getProcessState(state string) string {
+	switch state {
+	case "R":
+		return "Running"
+	case "S":
+		return "Sleeping"
+	case "D":
+		return "Disk Sleep"
+	case "Z":
+		return "Zombie"
+	case "T":
+		return "Stopped"
+	case "t":
+		return "Tracing stop"
+	case "X":
+		return "Dead"
+	case "P":
+		return "Parked"
+	default:
+		return state
 	}
 }
 
