@@ -65,6 +65,10 @@ public class PairedComparionsMatrix {
 
     // val - от 1 до 10
     public void setValue(int i, int j, float val) {
+		if(val < 1 || val > 10)
+			val = 0.0f;
+		
+		
         if(i != j && this.mainMatrix[i][j] == 0.0f) {
             this.mainMatrix[i][j] = val;
             this.mainMatrix[j][i] = 1/val;
