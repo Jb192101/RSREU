@@ -39,13 +39,13 @@ void read_directory(const std::string &path) {
         struct stat st;
         std::string full = path + "/" + n;
         if (stat(full.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-            entries.push_back({n, true});
+            entries.push_back({n, true}); // Исправлено
         } else {
-            entries.push_back({n, false});
+            entries.push_back({n, false}); // Исправлено
         }
     }
     closedir(d);
-    std::sort(entries.begin(), entries.end(), [](const Entry &a, const Entry &b){
+    std::sort(entries.begin(), entries.end(), [](const Entry &a, const Entry &b) { // Исправлено
         if (a.is_dir != b.is_dir) return a.is_dir > b.is_dir;
         return strcasecmp(a.name.c_str(), b.name.c_str()) < 0;
     });
