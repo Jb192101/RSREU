@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
+#include <limits.h>
 
 const int WIN_W = 640;
 const int WIN_H = 480;
@@ -25,6 +26,12 @@ std::vector<Entry> entries;
 int scroll = 0;
 std::string cwd = ".";
 
+// Функция сравнения для сортировки (заменяет лямбду)
+bool compare_entries(const Entry &a, const Entry &b) {
+    if (a.is_dir != b.is_dir) return a.is_dir > b.is_dir;
+    return strcasecmp(a.name.c_str(), b.name.c_str()) < 0;
+}
+
 void read_directory(const std::string &path) {
     entries.clear();
     DIR *d = opendir(path.c_str());
@@ -39,16 +46,19 @@ void read_directory(const std::string &path) {
         struct stat st;
         std::string full = path + "/" + n;
         if (stat(full.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-            entries.push_back({n, true}); // Исправлено
+            Entry e;
+            e.name = n;
+            e.is_dir = true;
+            entries.push_back(e);
         } else {
-            entries.push_back({n, false}); // Исправлено
+            Entry e;
+            e.name = n;
+            e.is_dir = false;
+            entries.push_back(e);
         }
     }
     closedir(d);
-    std::sort(entries.begin(), entries.end(), [](const Entry &a, const Entry &b) { // Исправлено
-        if (a.is_dir != b.is_dir) return a.is_dir > b.is_dir;
-        return strcasecmp(a.name.c_str(), b.name.c_str()) < 0;
-    });
+    std::sort(entries.begin(), entries.end(), compare_entries);
     scroll = 0;
 }
 
