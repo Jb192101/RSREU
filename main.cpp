@@ -1,3 +1,9 @@
+/*
+ * minix_xfm_v4.c
+ * Simple X11 file manager for Minix 3.4.0 - Version 4.0
+ * Added permissions, gray highlight, and double-click open
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <time.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -14,6 +21,7 @@
 #define WINDOW_H 400
 #define LINE_HEIGHT 16
 #define MARGIN 5
+#define DOUBLE_CLICK_DELAY 300  // milliseconds
 
 typedef struct Entry {
     char name[256];
@@ -30,9 +38,10 @@ static XFontStruct *fontinfo;
 static Entry entries[1000];
 static int nentries = 0;
 static char cwd[1024];
-static int selected_idx = -1;   // NEW: index of selected entry
+static int selected_idx = -1;
+static struct timespec last_click_time = {0};
+static int last_click_idx = -1;
 
-/* Convert st_mode to string like -rwxr-xr-- */
 static void mode_to_str(mode_t mode, char *out)
 {
     out[0] = S_ISDIR(mode) ? 'd' : '-';
@@ -48,7 +57,6 @@ static void mode_to_str(mode_t mode, char *out)
     out[10] = '\0';
 }
 
-/* Read directory contents */
 static void read_dir(const char *path)
 {
     DIR *d;
@@ -87,20 +95,19 @@ static void read_dir(const char *path)
     closedir(d);
 }
 
-/* Draw the file list with highlight */
 static void draw_list(void)
 {
     XClearWindow(dpy, win);
     for (int i = 0; i < nentries; i++) {
         int y = MARGIN + i * LINE_HEIGHT + fontinfo->ascent;
         char display[400];
-        sprintf(display, "%-12s %s%s",
+        sprintf(display, "%-11s %s%s",
                 entries[i].perms,
                 entries[i].is_dir ? "[DIR] " : "",
                 entries[i].name);
 
         if (i == selected_idx) {
-            XSetForeground(dpy, gc, 0xC0C0C0);
+            XSetForeground(dpy, gc, 0xC0C0C0); // серый фон
             XFillRectangle(dpy, win, gc,
                            0, MARGIN + i * LINE_HEIGHT,
                            WINDOW_W, LINE_HEIGHT);
@@ -111,13 +118,11 @@ static void draw_list(void)
     }
 }
 
-/* Check read permission */
 static int has_read_access(const char *path)
 {
     return access(path, R_OK) == 0;
 }
 
-/* Open file or directory */
 static void open_entry(int idx)
 {
     char newpath[1024];
@@ -157,14 +162,32 @@ static void open_entry(int idx)
     }
 }
 
-/* Handle mouse click with selection */
+static long diff_ms(struct timespec a, struct timespec b)
+{
+    return (a.tv_sec - b.tv_sec) * 1000 + (a.tv_nsec - b.tv_nsec) / 1000000;
+}
+
+/* Single or double click logic */
 static void handle_click(int y)
 {
     int idx = (y - MARGIN) / LINE_HEIGHT;
-    if (idx >= 0 && idx < nentries) {
-        selected_idx = idx;  
-        draw_list();
+    if (idx < 0 || idx >= nentries) return;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    long diff = diff_ms(now, last_click_time);
+
+    // один клик — выделение
+    selected_idx = idx;
+    draw_list();
+
+    // двойной клик по той же строке за <300 мс
+    if (idx == last_click_idx && diff < DOUBLE_CLICK_DELAY) {
         open_entry(idx);
+        last_click_idx = -1;  // сбрасываем
+    } else {
+        last_click_idx = idx;
+        last_click_time = now;
     }
 }
 
@@ -183,7 +206,7 @@ int main(int argc, char **argv)
                               0, 0, WINDOW_W, WINDOW_H, 1,
                               BlackPixel(dpy, 0), WhitePixel(dpy, 0));
     XSelectInput(dpy, win, ExposureMask | ButtonPressMask);
-    XStoreName(dpy, win, "Minix FM v3.0 (highlight + permissions)");
+    XStoreName(dpy, win, "Minix FM v4.0 (double-click + permissions)");
     XMapWindow(dpy, win);
 
     fontinfo = XLoadQueryFont(dpy, "fixed");
