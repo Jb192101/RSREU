@@ -1,7 +1,7 @@
 /*
- * minix_xfm_v5.c
- * Simple X11 file manager for Minix 3.4.0 - Version 5.0
- * Added scroll and window resize support
+ * minix_xfm_v6.c
+ * Simple X11 file manager for Minix 3.4.0 - Version 6.0
+ * Added resize fix, keyboard navigation (arrows, PgUp/PgDn, Enter)
  */
 
 #include <stdio.h>
@@ -16,6 +16,7 @@
 #include <time.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 
 #define LINE_HEIGHT 16
 #define MARGIN 5
@@ -40,11 +41,11 @@ static int selected_idx = -1;
 static struct timespec last_click_time = {0};
 static int last_click_idx = -1;
 
-// new dynamic window size
+// dynamic window size
 static int win_w = 700;
 static int win_h = 400;
 
-// new scroll
+// scroll state
 static int scroll_offset = 0;
 
 static void mode_to_str(mode_t mode, char *out)
@@ -117,7 +118,7 @@ static void draw_list(void)
                 entries[entry_idx].name);
 
         if (entry_idx == selected_idx) {
-            XSetForeground(dpy, gc, 0xC0C0C0); // серый фон
+            XSetForeground(dpy, gc, 0xC0C0C0);
             XFillRectangle(dpy, win, gc,
                            0, MARGIN + i * LINE_HEIGHT,
                            win_w, LINE_HEIGHT);
@@ -177,7 +178,6 @@ static long diff_ms(struct timespec a, struct timespec b)
     return (a.tv_sec - b.tv_sec) * 1000 + (a.tv_nsec - b.tv_nsec) / 1000000;
 }
 
-/* Single or double click logic */
 static void handle_click(int y)
 {
     int visible_lines = win_h / LINE_HEIGHT;
@@ -212,6 +212,57 @@ static void scroll_down(void) {
     draw_list();
 }
 
+static void scroll_page_up(void) {
+    int visible_lines = win_h / LINE_HEIGHT;
+    scroll_offset -= visible_lines;
+    if (scroll_offset < 0) scroll_offset = 0;
+    draw_list();
+}
+
+static void scroll_page_down(void) {
+    int visible_lines = win_h / LINE_HEIGHT;
+    scroll_offset += visible_lines;
+    if (scroll_offset + visible_lines > nentries)
+        scroll_offset = nentries - visible_lines;
+    if (scroll_offset < 0) scroll_offset = 0;
+    draw_list();
+}
+
+static void handle_key(XKeyEvent *key)
+{
+    KeySym ks = XLookupKeysym(key, 0);
+    switch (ks) {
+        case XK_Up:
+            if (selected_idx > 0) selected_idx--;
+            if (selected_idx < scroll_offset)
+                scroll_offset = selected_idx;
+            draw_list();
+            break;
+
+        case XK_Down: {
+            int visible_lines = win_h / LINE_HEIGHT;
+            if (selected_idx < nentries - 1) selected_idx++;
+            if (selected_idx >= scroll_offset + visible_lines)
+                scroll_offset++;
+            draw_list();
+            break;
+        }
+
+        case XK_Page_Up:
+            scroll_page_up();
+            break;
+
+        case XK_Page_Down:
+            scroll_page_down();
+            break;
+
+        case XK_Return:
+            if (selected_idx >= 0)
+                open_entry(selected_idx);
+            break;
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (getcwd(cwd, sizeof(cwd)) == NULL)
@@ -227,8 +278,18 @@ int main(int argc, char **argv)
     win = XCreateSimpleWindow(dpy, RootWindow(dpy, screen),
                               0, 0, win_w, win_h, 1,
                               BlackPixel(dpy, screen), WhitePixel(dpy, screen));
-    XSelectInput(dpy, win, ExposureMask | ButtonPressMask | StructureNotifyMask);
-    XStoreName(dpy, win, "Minix FM v5.0 (scroll + resize)");
+
+    XSizeHints hints;
+    hints.flags = PSize | PMinSize | PMaxSize;
+    hints.min_width = 300;
+    hints.min_height = 200;
+    hints.max_width = 2000;
+    hints.max_height = 1200;
+    XSetNormalHints(dpy, win, &hints);
+
+    XSelectInput(dpy, win, ExposureMask | ButtonPressMask |
+                 StructureNotifyMask | KeyPressMask);
+    XStoreName(dpy, win, "Minix FM v6.0 (scroll + resize + keys)");
     XMapWindow(dpy, win);
 
     fontinfo = XLoadQueryFont(dpy, "fixed");
@@ -251,6 +312,8 @@ int main(int argc, char **argv)
             else
                 handle_click(ev.xbutton.y);
         }
+        else if (ev.type == KeyPress)
+            handle_key(&ev.xkey);
         else if (ev.type == ConfigureNotify) {
             win_w = ev.xconfigure.width;
             win_h = ev.xconfigure.height;
