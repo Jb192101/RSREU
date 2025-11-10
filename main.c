@@ -6,9 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
-#define WIN_W 640
-#define WIN_H 480
 #define LINE_H 18
 #define LEFT_MARGIN 8
 #define TOP_MARGIN 8
@@ -22,6 +21,10 @@ static struct entry entries[1024];
 static int entry_count = 0;
 static int scroll = 0;
 static char cwd[PATH_MAX];
+
+// размеры окна (теперь не константы)
+static int win_w = 640;
+static int win_h = 480;
 
 void read_directory(const char *path) {
     DIR *d = opendir(path);
@@ -41,7 +44,8 @@ void read_directory(const char *path) {
             entries[entry_count].is_dir = 1;
         else
             entries[entry_count].is_dir = 0;
-        strncpy(entries[entry_count].name, de->d_name, sizeof(entries[entry_count].name)-1);
+        strncpy(entries[entry_count].name, de->d_name, sizeof(entries[entry_count].name) - 1);
+        entries[entry_count].name[sizeof(entries[entry_count].name) - 1] = '\0';
         entry_count++;
     }
     closedir(d);
@@ -51,7 +55,8 @@ void read_directory(const char *path) {
 void draw(Display *dpy, Window win, GC gc) {
     XClearWindow(dpy, win);
     int y = TOP_MARGIN + LINE_H;
-    int visible = (WIN_H - 2*TOP_MARGIN) / LINE_H;
+    int visible = (win_h - 2 * TOP_MARGIN) / LINE_H;
+
     for (int i = scroll; i < entry_count && i < scroll + visible; i++) {
         if (entries[i].is_dir) {
             XDrawRectangle(dpy, win, gc, LEFT_MARGIN, y - LINE_H + 4, 10, 10);
@@ -59,9 +64,10 @@ void draw(Display *dpy, Window win, GC gc) {
         XDrawString(dpy, win, gc, LEFT_MARGIN + 20, y, entries[i].name, strlen(entries[i].name));
         y += LINE_H;
     }
+
     char status[512];
     snprintf(status, sizeof(status), "CWD: %s (%d items)", cwd, entry_count);
-    XDrawString(dpy, win, gc, LEFT_MARGIN, WIN_H - 5, status, strlen(status));
+    XDrawString(dpy, win, gc, LEFT_MARGIN, win_h - 5, status, strlen(status));
 }
 
 int entry_at_y(int y) {
@@ -88,10 +94,12 @@ int main() {
 
     int screen = DefaultScreen(dpy);
     Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, screen),
-                                     50, 50, WIN_W, WIN_H, 1,
+                                     50, 50, win_w, win_h, 1,
                                      BlackPixel(dpy, screen),
                                      WhitePixel(dpy, screen));
-    XSelectInput(dpy, win, ExposureMask | KeyPressMask | ButtonPressMask);
+
+    // Добавляем обработку изменения размера окна
+    XSelectInput(dpy, win, ExposureMask | KeyPressMask | ButtonPressMask | StructureNotifyMask);
     XMapWindow(dpy, win);
 
     GC gc = XCreateGC(dpy, win, 0, NULL);
@@ -103,9 +111,24 @@ int main() {
     int running = 1;
     while (running) {
         XNextEvent(dpy, &ev);
+
         if (ev.type == Expose) {
             draw(dpy, win, gc);
-        } else if (ev.type == KeyPress) {
+        } 
+        else if (ev.type == ConfigureNotify) {
+            // Окно изменило размер
+            win_w = ev.xconfigure.width;
+            win_h = ev.xconfigure.height;
+
+            // Проверим границы прокрутки
+            int visible = (win_h - 2 * TOP_MARGIN) / LINE_H;
+            if (scroll + visible > entry_count)
+                scroll = entry_count > visible ? entry_count - visible : 0;
+
+
+            draw(dpy, win, gc);
+        } 
+        else if (ev.type == KeyPress) {
             KeySym ks = XLookupKeysym(&ev.xkey, 0);
             if (ks == XK_q || ks == XK_Escape)
                 running = 0;
@@ -113,11 +136,12 @@ int main() {
                 if (scroll > 0) scroll--;
                 draw(dpy, win, gc);
             } else if (ks == XK_Down) {
-                int visible = (WIN_H - 2*TOP_MARGIN) / LINE_H;
+                int visible = (win_h - 2 * TOP_MARGIN) / LINE_H;
                 if (scroll + visible < entry_count) scroll++;
                 draw(dpy, win, gc);
             }
-        } else if (ev.type == ButtonPress) {
+        } 
+        else if (ev.type == ButtonPress) {
             if (ev.xbutton.button == Button1) {
                 int idx = entry_at_y(ev.xbutton.y);
                 if (idx >= 0 && entries[idx].is_dir) {
@@ -140,7 +164,7 @@ int main() {
                 if (scroll > 0) scroll--;
                 draw(dpy, win, gc);
             } else if (ev.xbutton.button == Button5) { // scroll down
-                int visible = (WIN_H - 2*TOP_MARGIN) / LINE_H;
+                int visible = (win_h - 2 * TOP_MARGIN) / LINE_H;
                 if (scroll + visible < entry_count) scroll++;
                 draw(dpy, win, gc);
             }
