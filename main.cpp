@@ -1,7 +1,8 @@
 /*
- * minix_xfm_v6.c
- * Simple X11 file manager for Minix 3.4.0 - Version 6.0
- * Added resize fix, keyboard navigation (arrows, PgUp/PgDn, Enter)
+ * minix_xfm_v7.c
+ * Simple X11 file manager for Minix 3.4.0 - Version 7.0
+ * Added file type detection: [TXT] or [BIN]
+ * + resize fix, keyboard navigation
  */
 
 #include <stdio.h>
@@ -17,6 +18,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
+#include <ctype.h>
 
 #define LINE_HEIGHT 16
 #define MARGIN 5
@@ -27,6 +29,7 @@ typedef struct Entry {
     int is_dir;
     char perms[11];
     mode_t mode;
+    char type_label[8]; // [DIR], [TXT], [BIN]
 } Entry;
 
 static Display *dpy;
@@ -41,11 +44,8 @@ static int selected_idx = -1;
 static struct timespec last_click_time = {0};
 static int last_click_idx = -1;
 
-// dynamic window size
 static int win_w = 700;
 static int win_h = 400;
-
-// scroll state
 static int scroll_offset = 0;
 
 static void mode_to_str(mode_t mode, char *out)
@@ -61,6 +61,24 @@ static void mode_to_str(mode_t mode, char *out)
     out[8] = (mode & S_IWOTH) ? 'w' : '-';
     out[9] = (mode & S_IXOTH) ? 'x' : '-';
     out[10] = '\0';
+}
+
+/* Определяем, является ли файл текстовым */
+static int is_text_file(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f) return 0;
+    unsigned char buf[256];
+    size_t n = fread(buf, 1, sizeof(buf), f);
+    fclose(f);
+    if (n == 0) return 1; // пустые считаем текстовыми
+
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = buf[i];
+        if (c == 9 || c == 10 || c == 13) continue; // tab, LF, CR
+        if (c < 32 || c > 126) return 0; // непечатаемый символ
+    }
+    return 1;
 }
 
 static void read_dir(const char *path)
@@ -84,6 +102,7 @@ static void read_dir(const char *path)
         strcpy(entries[nentries].name, "..");
         entries[nentries].is_dir = 1;
         strcpy(entries[nentries].perms, "drwx------");
+        strcpy(entries[nentries].type_label, "[DIR]");
         entries[nentries].mode = S_IFDIR | 0700;
         nentries++;
     }
@@ -96,6 +115,15 @@ static void read_dir(const char *path)
             entries[nentries].is_dir = S_ISDIR(st.st_mode);
             entries[nentries].mode = st.st_mode;
             mode_to_str(st.st_mode, entries[nentries].perms);
+
+            if (entries[nentries].is_dir) {
+                strcpy(entries[nentries].type_label, "[DIR]");
+            } else {
+                if (is_text_file(full))
+                    strcpy(entries[nentries].type_label, "[TXT]");
+                else
+                    strcpy(entries[nentries].type_label, "[BIN]");
+            }
             nentries++;
         }
     }
@@ -112,9 +140,9 @@ static void draw_list(void)
 
         int y = MARGIN + i * LINE_HEIGHT + fontinfo->ascent;
         char display[400];
-        sprintf(display, "%-11s %s%s",
+        sprintf(display, "%-11s %s %s",
                 entries[entry_idx].perms,
-                entries[entry_idx].is_dir ? "[DIR] " : "",
+                entries[entry_idx].type_label,
                 entries[entry_idx].name);
 
         if (entry_idx == selected_idx) {
@@ -289,7 +317,7 @@ int main(int argc, char **argv)
 
     XSelectInput(dpy, win, ExposureMask | ButtonPressMask |
                  StructureNotifyMask | KeyPressMask);
-    XStoreName(dpy, win, "Minix FM v6.0 (scroll + resize + keys)");
+    XStoreName(dpy, win, "Minix FM v7.0 (TXT/BIN detection)");
     XMapWindow(dpy, win);
 
     fontinfo = XLoadQueryFont(dpy, "fixed");
