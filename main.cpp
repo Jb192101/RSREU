@@ -1,7 +1,7 @@
 /*
- * minix_xfm_v4.c
- * Simple X11 file manager for Minix 3.4.0 - Version 4.0
- * Added permissions, gray highlight, and double-click open
+ * minix_xfm_v5.c
+ * Simple X11 file manager for Minix 3.4.0 - Version 5.0
+ * Added scroll and window resize support
  */
 
 #include <stdio.h>
@@ -17,8 +17,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#define WINDOW_W 700
-#define WINDOW_H 400
 #define LINE_HEIGHT 16
 #define MARGIN 5
 #define DOUBLE_CLICK_DELAY 300  // milliseconds
@@ -41,6 +39,13 @@ static char cwd[1024];
 static int selected_idx = -1;
 static struct timespec last_click_time = {0};
 static int last_click_idx = -1;
+
+// new dynamic window size
+static int win_w = 700;
+static int win_h = 400;
+
+// new scroll
+static int scroll_offset = 0;
 
 static void mode_to_str(mode_t mode, char *out)
 {
@@ -72,6 +77,7 @@ static void read_dir(const char *path)
 
     nentries = 0;
     selected_idx = -1;
+    scroll_offset = 0;
 
     if (strcmp(path, "/") != 0) {
         strcpy(entries[nentries].name, "..");
@@ -98,19 +104,23 @@ static void read_dir(const char *path)
 static void draw_list(void)
 {
     XClearWindow(dpy, win);
-    for (int i = 0; i < nentries; i++) {
+    int visible_lines = win_h / LINE_HEIGHT;
+    for (int i = 0; i < visible_lines; i++) {
+        int entry_idx = i + scroll_offset;
+        if (entry_idx >= nentries) break;
+
         int y = MARGIN + i * LINE_HEIGHT + fontinfo->ascent;
         char display[400];
         sprintf(display, "%-11s %s%s",
-                entries[i].perms,
-                entries[i].is_dir ? "[DIR] " : "",
-                entries[i].name);
+                entries[entry_idx].perms,
+                entries[entry_idx].is_dir ? "[DIR] " : "",
+                entries[entry_idx].name);
 
-        if (i == selected_idx) {
+        if (entry_idx == selected_idx) {
             XSetForeground(dpy, gc, 0xC0C0C0); // серый фон
             XFillRectangle(dpy, win, gc,
                            0, MARGIN + i * LINE_HEIGHT,
-                           WINDOW_W, LINE_HEIGHT);
+                           win_w, LINE_HEIGHT);
             XSetForeground(dpy, gc, BlackPixel(dpy, 0));
         }
 
@@ -170,25 +180,36 @@ static long diff_ms(struct timespec a, struct timespec b)
 /* Single or double click logic */
 static void handle_click(int y)
 {
-    int idx = (y - MARGIN) / LINE_HEIGHT;
+    int visible_lines = win_h / LINE_HEIGHT;
+    int idx = (y - MARGIN) / LINE_HEIGHT + scroll_offset;
     if (idx < 0 || idx >= nentries) return;
 
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     long diff = diff_ms(now, last_click_time);
 
-    // один клик — выделение
     selected_idx = idx;
     draw_list();
 
-    // двойной клик по той же строке за <300 мс
     if (idx == last_click_idx && diff < DOUBLE_CLICK_DELAY) {
         open_entry(idx);
-        last_click_idx = -1;  // сбрасываем
+        last_click_idx = -1;
     } else {
         last_click_idx = idx;
         last_click_time = now;
     }
+}
+
+static void scroll_up(void) {
+    if (scroll_offset > 0) scroll_offset--;
+    draw_list();
+}
+
+static void scroll_down(void) {
+    int visible_lines = win_h / LINE_HEIGHT;
+    if (scroll_offset + visible_lines < nentries)
+        scroll_offset++;
+    draw_list();
 }
 
 int main(int argc, char **argv)
@@ -202,11 +223,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    win = XCreateSimpleWindow(dpy, RootWindow(dpy, 0),
-                              0, 0, WINDOW_W, WINDOW_H, 1,
-                              BlackPixel(dpy, 0), WhitePixel(dpy, 0));
-    XSelectInput(dpy, win, ExposureMask | ButtonPressMask);
-    XStoreName(dpy, win, "Minix FM v4.0 (double-click + permissions)");
+    int screen = DefaultScreen(dpy);
+    win = XCreateSimpleWindow(dpy, RootWindow(dpy, screen),
+                              0, 0, win_w, win_h, 1,
+                              BlackPixel(dpy, screen), WhitePixel(dpy, screen));
+    XSelectInput(dpy, win, ExposureMask | ButtonPressMask | StructureNotifyMask);
+    XStoreName(dpy, win, "Minix FM v5.0 (scroll + resize)");
     XMapWindow(dpy, win);
 
     fontinfo = XLoadQueryFont(dpy, "fixed");
@@ -221,8 +243,19 @@ int main(int argc, char **argv)
         XNextEvent(dpy, &ev);
         if (ev.type == Expose)
             draw_list();
-        else if (ev.type == ButtonPress)
-            handle_click(ev.xbutton.y);
+        else if (ev.type == ButtonPress) {
+            if (ev.xbutton.button == Button4)
+                scroll_up();
+            else if (ev.xbutton.button == Button5)
+                scroll_down();
+            else
+                handle_click(ev.xbutton.y);
+        }
+        else if (ev.type == ConfigureNotify) {
+            win_w = ev.xconfigure.width;
+            win_h = ev.xconfigure.height;
+            draw_list();
+        }
     }
 
     return 0;
