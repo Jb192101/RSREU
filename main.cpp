@@ -5,6 +5,7 @@
  * + resize fix, keyboard navigation
  * + Fixed hang when opening /dev directory
  * + Added keyboard shortcuts
+ * Pure C version
  */
 
 #include <stdio.h>
@@ -20,18 +21,17 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
-#include <ctype.h>
 
 #define LINE_HEIGHT 16
 #define MARGIN 5
-#define DOUBLE_CLICK_DELAY 300  // milliseconds
+#define DOUBLE_CLICK_DELAY 300  /* milliseconds */
 
 typedef struct Entry {
     char name[256];
     int is_dir;
     char perms[11];
     mode_t mode;
-    char type_label[8]; // [DIR], [TXT], [BIN]
+    char type_label[8]; /* [DIR], [TXT], [BIN] */
 } Entry;
 
 static Display *dpy;
@@ -71,7 +71,7 @@ static int is_text_file(const char *path)
     struct stat st;
     if (stat(path, &st) != 0) return 0;
     
-    // Не пытаемся читать специальные файлы (устройства, FIFO, сокеты и т.д.)
+    /* Не пытаемся читать специальные файлы (устройства, FIFO, сокеты и т.д.) */
     if (!S_ISREG(st.st_mode)) return 0;
     
     FILE *f = fopen(path, "rb");
@@ -81,12 +81,12 @@ static int is_text_file(const char *path)
     size_t n = fread(buf, 1, sizeof(buf), f);
     fclose(f);
     
-    if (n == 0) return 1; // пустые считаем текстовыми
+    if (n == 0) return 1; /* пустые считаем текстовыми */
 
     for (size_t i = 0; i < n; i++) {
         unsigned char c = buf[i];
-        if (c == 9 || c == 10 || c == 13) continue; // tab, LF, CR
-        if (c < 32 || c > 126) return 0; // непечатаемый символ
+        if (c == 9 || c == 10 || c == 13) continue; /* tab, LF, CR */
+        if (c < 32 || c > 126) return 0; /* непечатаемый символ */
     }
     return 1;
 }
@@ -129,14 +129,14 @@ static void read_dir(const char *path)
             if (entries[nentries].is_dir) {
                 strcpy(entries[nentries].type_label, "[DIR]");
             } else {
-                // Для обычных файлов определяем тип (текст/бинарник)
+                /* Для обычных файлов определяем тип (текст/бинарник) */
                 if (S_ISREG(st.st_mode)) {
                     if (is_text_file(full))
                         strcpy(entries[nentries].type_label, "[TXT]");
                     else
                         strcpy(entries[nentries].type_label, "[BIN]");
                 } else {
-                    // Для специальных файлов (устройств и т.д.) показываем тип файла
+                    /* Для специальных файлов (устройств и т.д.) показываем тип файла */
                     if (S_ISCHR(st.st_mode)) strcpy(entries[nentries].type_label, "[CHR]");
                     else if (S_ISBLK(st.st_mode)) strcpy(entries[nentries].type_label, "[BLK]");
                     else if (S_ISFIFO(st.st_mode)) strcpy(entries[nentries].type_label, "[FIFO]");
@@ -155,13 +155,14 @@ static void draw_list(void)
 {
     XClearWindow(dpy, win);
     
-    // Отображаем текущую директорию в заголовке
+    /* Отображаем текущую директорию в заголовке */
     char title[1200];
     snprintf(title, sizeof(title), "Minix FM v7.0 - %s", cwd);
     XStoreName(dpy, win, title);
     
     int visible_lines = win_h / LINE_HEIGHT;
-    for (int i = 0; i < visible_lines; i++) {
+    int i;
+    for (i = 0; i < visible_lines; i++) {
         int entry_idx = i + scroll_offset;
         if (entry_idx >= nentries) break;
 
@@ -220,13 +221,13 @@ static void open_entry(int idx)
             return;
         }
 
-        // Проверяем, является ли файл обычным файлом (не устройством и т.д.)
+        /* Проверяем, является ли файл обычным файлом (не устройством и т.д.) */
         struct stat st;
         if (stat(filepath, &st) == 0 && S_ISREG(st.st_mode)) {
             int pid = fork();
             if (pid == 0) {
                 execlp("xterm", "xterm", "-e", "vi", filepath, NULL);
-                _exit(1);
+                exit(1);
             }
         } else {
             fprintf(stderr, "Cannot open non-regular file: %s\n", filepath);
@@ -240,7 +241,7 @@ static void open_terminal(void)
     if (pid == 0) {
         chdir(cwd);
         execlp("xterm", "xterm", NULL);
-        _exit(1);
+        exit(1);
     }
 }
 
@@ -394,11 +395,11 @@ static void handle_key(XKeyEvent *key)
     KeySym ks = XLookupKeysym(key, 0);
     int state = key->state;
     
-    // Проверяем Ctrl комбинации
+    /* Проверяем Ctrl комбинации */
     int ctrl_pressed = (state & ControlMask);
     
     switch (ks) {
-        // Навигация
+        /* Навигация */
         case XK_Up:
             if (selected_idx > 0) selected_idx--;
             if (selected_idx < scroll_offset)
@@ -431,26 +432,28 @@ static void handle_key(XKeyEvent *key)
             scroll_to_bottom();
             break;
 
-        // Основные операции
+        /* Основные операции */
         case XK_Return:
             if (selected_idx >= 0)
                 open_entry(selected_idx);
             break;
             
         case XK_BackSpace:
-            // Имитируем клик на ".."
-            for (int i = 0; i < nentries; i++) {
-                if (strcmp(entries[i].name, "..") == 0) {
-                    open_entry(i);
-                    break;
+            /* Имитируем клик на ".." */
+            {
+                int i;
+                for (i = 0; i < nentries; i++) {
+                    if (strcmp(entries[i].name, "..") == 0) {
+                        open_entry(i);
+                        break;
+                    }
                 }
             }
             break;
 
-        // Функциональные клавиши
+        /* Функциональные клавиши */
         case XK_F1:
         case XK_question:
-        case XK_KP_Question:
             show_help();
             break;
             
@@ -474,7 +477,7 @@ static void handle_key(XKeyEvent *key)
             delete_selected();
             break;
 
-        // Директории
+        /* Директории */
         case XK_t:
         case XK_T:
             open_terminal();
@@ -486,13 +489,12 @@ static void handle_key(XKeyEvent *key)
             break;
             
         case XK_slash:
-        case XK_KP_Divide:
             strcpy(cwd, "/");
             read_dir(cwd);
             draw_list();
             break;
 
-        // Приложение
+        /* Приложение */
         case XK_q:
         case XK_Q:
             if (ctrl_pressed) {
@@ -504,7 +506,7 @@ static void handle_key(XKeyEvent *key)
         case XK_l:
         case XK_L:
             if (ctrl_pressed) {
-                draw_list(); // Ctrl+L - refresh display
+                draw_list(); /* Ctrl+L - refresh display */
             }
             break;
     }
