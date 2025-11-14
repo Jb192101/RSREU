@@ -4,6 +4,7 @@
  * Added file type detection: [TXT] or [BIN]
  * + resize fix, keyboard navigation
  * + Fixed hang when opening /dev directory
+ * + Added keyboard shortcuts
  */
 
 #include <stdio.h>
@@ -153,6 +154,12 @@ static void read_dir(const char *path)
 static void draw_list(void)
 {
     XClearWindow(dpy, win);
+    
+    // Отображаем текущую директорию в заголовке
+    char title[1200];
+    snprintf(title, sizeof(title), "Minix FM v7.0 - %s", cwd);
+    XStoreName(dpy, win, title);
+    
     int visible_lines = win_h / LINE_HEIGHT;
     for (int i = 0; i < visible_lines; i++) {
         int entry_idx = i + scroll_offset;
@@ -227,6 +234,92 @@ static void open_entry(int idx)
     }
 }
 
+static void open_terminal(void)
+{
+    int pid = fork();
+    if (pid == 0) {
+        chdir(cwd);
+        execlp("xterm", "xterm", NULL);
+        _exit(1);
+    }
+}
+
+static void show_help(void)
+{
+    printf("\n=== Minix File Manager v7.0 - Keyboard Shortcuts ===\n\n");
+    printf("Navigation:\n");
+    printf("  Up/Down arrows    - Navigate through files\n");
+    printf("  Page Up/Page Down - Scroll page by page\n");
+    printf("  Home/End          - Jump to first/last file\n");
+    printf("  Enter             - Open selected file/directory\n\n");
+    
+    printf("File Operations:\n");
+    printf("  F5 or R           - Refresh directory\n");
+    printf("  F2 or F           - Open file in editor\n");
+    printf("  Delete or D       - Delete selected file (with confirmation)\n\n");
+    
+    printf("Directory Operations:\n");
+    printf("  Backspace         - Go to parent directory\n");
+    printf("  T                 - Open terminal in current directory\n");
+    printf("  H                 - Go to home directory\n");
+    printf("  /                 - Go to root directory\n\n");
+    
+    printf("Application:\n");
+    printf("  F1 or ?           - Show this help\n");
+    printf("  Q or Ctrl+Q       - Quit application\n");
+    printf("  Ctrl+L            - Refresh display\n\n");
+}
+
+static int confirm_dialog(const char *message)
+{
+    printf("%s (y/N): ", message);
+    fflush(stdout);
+    
+    char response[10];
+    if (fgets(response, sizeof(response), stdin)) {
+        return (response[0] == 'y' || response[0] == 'Y');
+    }
+    return 0;
+}
+
+static void delete_selected(void)
+{
+    if (selected_idx < 0 || selected_idx >= nentries) return;
+    
+    char filepath[1024];
+    snprintf(filepath, sizeof(filepath), "%s/%s",
+             strcmp(cwd, "/") == 0 ? "" : cwd,
+             entries[selected_idx].name);
+    
+    if (entries[selected_idx].is_dir) {
+        if (!confirm_dialog("Delete directory? This cannot be undone!")) return;
+        if (rmdir(filepath) == 0) {
+            read_dir(cwd);
+            draw_list();
+        } else {
+            perror("rmdir");
+        }
+    } else {
+        if (!confirm_dialog("Delete file? This cannot be undone!")) return;
+        if (unlink(filepath) == 0) {
+            read_dir(cwd);
+            draw_list();
+        } else {
+            perror("unlink");
+        }
+    }
+}
+
+static void go_home(void)
+{
+    char *home = getenv("HOME");
+    if (home) {
+        strcpy(cwd, home);
+        read_dir(cwd);
+        draw_list();
+    }
+}
+
 static long diff_ms(struct timespec a, struct timespec b)
 {
     return (a.tv_sec - b.tv_sec) * 1000 + (a.tv_nsec - b.tv_nsec) / 1000000;
@@ -282,10 +375,30 @@ static void scroll_page_down(void) {
     draw_list();
 }
 
+static void scroll_to_top(void) {
+    scroll_offset = 0;
+    selected_idx = 0;
+    draw_list();
+}
+
+static void scroll_to_bottom(void) {
+    int visible_lines = win_h / LINE_HEIGHT;
+    selected_idx = nentries - 1;
+    scroll_offset = nentries - visible_lines;
+    if (scroll_offset < 0) scroll_offset = 0;
+    draw_list();
+}
+
 static void handle_key(XKeyEvent *key)
 {
     KeySym ks = XLookupKeysym(key, 0);
+    int state = key->state;
+    
+    // Проверяем Ctrl комбинации
+    int ctrl_pressed = (state & ControlMask);
+    
     switch (ks) {
+        // Навигация
         case XK_Up:
             if (selected_idx > 0) selected_idx--;
             if (selected_idx < scroll_offset)
@@ -309,16 +422,99 @@ static void handle_key(XKeyEvent *key)
         case XK_Page_Down:
             scroll_page_down();
             break;
+            
+        case XK_Home:
+            scroll_to_top();
+            break;
+            
+        case XK_End:
+            scroll_to_bottom();
+            break;
 
+        // Основные операции
         case XK_Return:
             if (selected_idx >= 0)
                 open_entry(selected_idx);
+            break;
+            
+        case XK_BackSpace:
+            // Имитируем клик на ".."
+            for (int i = 0; i < nentries; i++) {
+                if (strcmp(entries[i].name, "..") == 0) {
+                    open_entry(i);
+                    break;
+                }
+            }
+            break;
+
+        // Функциональные клавиши
+        case XK_F1:
+        case XK_question:
+        case XK_KP_Question:
+            show_help();
+            break;
+            
+        case XK_F2:
+        case XK_f:
+        case XK_F:
+            if (selected_idx >= 0 && !entries[selected_idx].is_dir)
+                open_entry(selected_idx);
+            break;
+            
+        case XK_F5:
+        case XK_r:
+        case XK_R:
+            read_dir(cwd);
+            draw_list();
+            break;
+            
+        case XK_Delete:
+        case XK_d:
+        case XK_D:
+            delete_selected();
+            break;
+
+        // Директории
+        case XK_t:
+        case XK_T:
+            open_terminal();
+            break;
+            
+        case XK_h:
+        case XK_H:
+            go_home();
+            break;
+            
+        case XK_slash:
+        case XK_KP_Divide:
+            strcpy(cwd, "/");
+            read_dir(cwd);
+            draw_list();
+            break;
+
+        // Приложение
+        case XK_q:
+        case XK_Q:
+            if (ctrl_pressed) {
+                printf("Goodbye!\n");
+                exit(0);
+            }
+            break;
+            
+        case XK_l:
+        case XK_L:
+            if (ctrl_pressed) {
+                draw_list(); // Ctrl+L - refresh display
+            }
             break;
     }
 }
 
 int main(int argc, char **argv)
 {
+    printf("Minix File Manager v7.0 started\n");
+    printf("Press F1 or ? for keyboard shortcuts\n");
+    
     if (getcwd(cwd, sizeof(cwd)) == NULL)
         strcpy(cwd, "/");
 
@@ -343,7 +539,7 @@ int main(int argc, char **argv)
 
     XSelectInput(dpy, win, ExposureMask | ButtonPressMask |
                  StructureNotifyMask | KeyPressMask);
-    XStoreName(dpy, win, "Minix FM v7.0 (TXT/BIN detection)");
+    XStoreName(dpy, win, "Minix FM v7.0 (Press F1 for help)");
     XMapWindow(dpy, win);
 
     fontinfo = XLoadQueryFont(dpy, "fixed");
