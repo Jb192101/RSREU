@@ -3,6 +3,7 @@
  * Simple X11 file manager for Minix 3.4.0 - Version 7.0
  * Added file type detection: [TXT] or [BIN]
  * + resize fix, keyboard navigation
+ * + Fixed hang when opening /dev directory
  */
 
 #include <stdio.h>
@@ -66,11 +67,19 @@ static void mode_to_str(mode_t mode, char *out)
 /* Определяем, является ли файл текстовым */
 static int is_text_file(const char *path)
 {
+    struct stat st;
+    if (stat(path, &st) != 0) return 0;
+    
+    // Не пытаемся читать специальные файлы (устройства, FIFO, сокеты и т.д.)
+    if (!S_ISREG(st.st_mode)) return 0;
+    
     FILE *f = fopen(path, "rb");
     if (!f) return 0;
+    
     unsigned char buf[256];
     size_t n = fread(buf, 1, sizeof(buf), f);
     fclose(f);
+    
     if (n == 0) return 1; // пустые считаем текстовыми
 
     for (size_t i = 0; i < n; i++) {
@@ -119,10 +128,21 @@ static void read_dir(const char *path)
             if (entries[nentries].is_dir) {
                 strcpy(entries[nentries].type_label, "[DIR]");
             } else {
-                if (is_text_file(full))
-                    strcpy(entries[nentries].type_label, "[TXT]");
-                else
-                    strcpy(entries[nentries].type_label, "[BIN]");
+                // Для обычных файлов определяем тип (текст/бинарник)
+                if (S_ISREG(st.st_mode)) {
+                    if (is_text_file(full))
+                        strcpy(entries[nentries].type_label, "[TXT]");
+                    else
+                        strcpy(entries[nentries].type_label, "[BIN]");
+                } else {
+                    // Для специальных файлов (устройств и т.д.) показываем тип файла
+                    if (S_ISCHR(st.st_mode)) strcpy(entries[nentries].type_label, "[CHR]");
+                    else if (S_ISBLK(st.st_mode)) strcpy(entries[nentries].type_label, "[BLK]");
+                    else if (S_ISFIFO(st.st_mode)) strcpy(entries[nentries].type_label, "[FIFO]");
+                    else if (S_ISLNK(st.st_mode)) strcpy(entries[nentries].type_label, "[LNK]");
+                    else if (S_ISSOCK(st.st_mode)) strcpy(entries[nentries].type_label, "[SOCK]");
+                    else strcpy(entries[nentries].type_label, "[???]");
+                }
             }
             nentries++;
         }
@@ -193,10 +213,16 @@ static void open_entry(int idx)
             return;
         }
 
-        int pid = fork();
-        if (pid == 0) {
-            execlp("xterm", "xterm", "-e", "vi", filepath, NULL);
-            _exit(1);
+        // Проверяем, является ли файл обычным файлом (не устройством и т.д.)
+        struct stat st;
+        if (stat(filepath, &st) == 0 && S_ISREG(st.st_mode)) {
+            int pid = fork();
+            if (pid == 0) {
+                execlp("xterm", "xterm", "-e", "vi", filepath, NULL);
+                _exit(1);
+            }
+        } else {
+            fprintf(stderr, "Cannot open non-regular file: %s\n", filepath);
         }
     }
 }
