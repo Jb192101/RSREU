@@ -64,6 +64,12 @@ static int win_w = 700;
 static int win_h = 400;
 static int scroll_offset = 0;
 
+/* Forward declarations */
+static void draw_list(void);
+static void read_dir(const char *path);
+static void update_process_list(void);
+static void show_help(void);
+
 static void mode_to_str(mode_t mode, char *out)
 {
     out[0] = S_ISDIR(mode) ? 'd' : '-';
@@ -254,7 +260,6 @@ static void draw_list(void)
     int i;
     
     /* Рисуем заголовок */
-    char header[100];
     if (show_processes) {
         XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent, 
                    "PID        Command", 18);
@@ -329,7 +334,7 @@ static void show_help(void)
     int help_pid = fork();
     if (help_pid == 0) {
         /* Создаем временный файл со справкой */
-        char *help_text =
+        const char *help_text =
             "=== Minix File Manager v7.0 - Keyboard Shortcuts ===\n\n"
             "Navigation:\n"
             "  Up/Down arrows    - Navigate through files/processes\n"
@@ -362,7 +367,7 @@ static void show_help(void)
             write(fd, help_text, strlen(help_text));
             close(fd);
             
-            /* Открываем в xterm с less для просмотра */
+            /* Открываем в xterm с cat для просмотра */
             execlp("xterm", "xterm", "-title", "Minix FM Help", 
                    "-geometry", "80x25", "-e", "cat", temp_file, NULL);
             
