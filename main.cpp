@@ -5,6 +5,8 @@
  * + resize fix, keyboard navigation
  * + Fixed hang when opening /dev directory
  * + Added keyboard shortcuts
+ * + Added process management (close applications)
+ * + Fixed help system
  * Pure C version
  */
 
@@ -16,6 +18,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <errno.h>
 #include <time.h>
 #include <X11/Xlib.h>
@@ -25,6 +28,7 @@
 #define LINE_HEIGHT 16
 #define MARGIN 5
 #define DOUBLE_CLICK_DELAY 300  /* milliseconds */
+#define MAX_PROCESSES 50
 
 typedef struct Entry {
     char name[256];
@@ -33,6 +37,12 @@ typedef struct Entry {
     mode_t mode;
     char type_label[8]; /* [DIR], [TXT], [BIN] */
 } Entry;
+
+typedef struct Process {
+    pid_t pid;
+    char command[256];
+    time_t start_time;
+} Process;
 
 static Display *dpy;
 static Window win;
@@ -45,6 +55,10 @@ static char cwd[1024];
 static int selected_idx = -1;
 static struct timespec last_click_time = {0};
 static int last_click_idx = -1;
+
+static Process processes[MAX_PROCESSES];
+static int nprocesses = 0;
+static int show_processes = 0; /* 0 = files, 1 = processes */
 
 static int win_w = 700;
 static int win_h = 400;
@@ -151,37 +165,213 @@ static void read_dir(const char *path)
     closedir(d);
 }
 
+/* Обновить список процессов */
+static void update_process_list(void)
+{
+    /* Очищаем старый список */
+    int i;
+    for (i = 0; i < nprocesses; i++) {
+        /* Проверяем, жив ли процесс */
+        if (kill(processes[i].pid, 0) != 0) {
+            /* Процесс завершился, удаляем из списка */
+            int j;
+            for (j = i; j < nprocesses - 1; j++) {
+                processes[j] = processes[j + 1];
+            }
+            nprocesses--;
+            i--;
+        }
+    }
+}
+
+/* Добавить процесс в список */
+static void add_process(pid_t pid, const char *command)
+{
+    if (nprocesses >= MAX_PROCESSES) {
+        /* Удаляем самый старый процесс */
+        int i;
+        for (i = 0; i < nprocesses - 1; i++) {
+            processes[i] = processes[i + 1];
+        }
+        nprocesses--;
+    }
+    
+    processes[nprocesses].pid = pid;
+    strncpy(processes[nprocesses].command, command, 255);
+    processes[nprocesses].start_time = time(NULL);
+    nprocesses++;
+}
+
+/* Завершить процесс */
+static void kill_process(int idx)
+{
+    if (idx < 0 || idx >= nprocesses) return;
+    
+    pid_t pid = processes[idx].pid;
+    
+    if (kill(pid, SIGTERM) == 0) {
+        printf("Sent SIGTERM to process %d (%s)\n", pid, processes[idx].command);
+        
+        /* Ждем немного для завершения */
+        sleep(1);
+        
+        /* Если процесс еще жив, посылаем SIGKILL */
+        if (kill(pid, 0) == 0) {
+            kill(pid, SIGKILL);
+            printf("Sent SIGKILL to process %d\n", pid);
+        }
+        
+        /* Удаляем процесс из списка */
+        int i;
+        for (i = idx; i < nprocesses - 1; i++) {
+            processes[i] = processes[i + 1];
+        }
+        nprocesses--;
+        
+        if (show_processes) {
+            update_process_list();
+            draw_list();
+        }
+    } else {
+        perror("kill");
+    }
+}
+
 static void draw_list(void)
 {
     XClearWindow(dpy, win);
     
-    /* Отображаем текущую директорию в заголовке */
+    /* Отображаем текущий режим в заголовке */
     char title[1200];
-    snprintf(title, sizeof(title), "Minix FM v7.0 - %s", cwd);
+    if (show_processes) {
+        snprintf(title, sizeof(title), "Minix FM v7.0 - Running Processes (%d) - F1: Help", nprocesses);
+    } else {
+        snprintf(title, sizeof(title), "Minix FM v7.0 - %s - F1: Help", cwd);
+    }
     XStoreName(dpy, win, title);
     
     int visible_lines = win_h / LINE_HEIGHT;
     int i;
+    
+    /* Рисуем заголовок */
+    char header[100];
+    if (show_processes) {
+        XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent, 
+                   "PID        Command", 18);
+    } else {
+        XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent, 
+                   "Permissions Type    Name", 25);
+    }
+    
+    /* Рисуем разделитель */
+    XDrawLine(dpy, win, gc, 0, MARGIN + LINE_HEIGHT, win_w, MARGIN + LINE_HEIGHT);
+    
     for (i = 0; i < visible_lines; i++) {
         int entry_idx = i + scroll_offset;
-        if (entry_idx >= nentries) break;
+        int y = MARGIN + (i + 1) * LINE_HEIGHT + fontinfo->ascent;
+        
+        if (show_processes) {
+            if (entry_idx >= nprocesses) break;
+            
+            char display[400];
+            char time_str[20];
+            time_t now = time(NULL);
+            int seconds = now - processes[entry_idx].start_time;
+            snprintf(time_str, sizeof(time_str), "%02d:%02d", seconds / 60, seconds % 60);
+            
+            snprintf(display, sizeof(display), "%-8d [%s] %s", 
+                    processes[entry_idx].pid, time_str, processes[entry_idx].command);
 
-        int y = MARGIN + i * LINE_HEIGHT + fontinfo->ascent;
-        char display[400];
-        sprintf(display, "%-11s %s %s",
-                entries[entry_idx].perms,
-                entries[entry_idx].type_label,
-                entries[entry_idx].name);
+            if (entry_idx == selected_idx) {
+                XSetForeground(dpy, gc, 0xFFC0C0); /* Красноватый для процессов */
+                XFillRectangle(dpy, win, gc,
+                               0, MARGIN + (i + 1) * LINE_HEIGHT,
+                               win_w, LINE_HEIGHT);
+                XSetForeground(dpy, gc, BlackPixel(dpy, 0));
+            }
 
-        if (entry_idx == selected_idx) {
-            XSetForeground(dpy, gc, 0xC0C0C0);
-            XFillRectangle(dpy, win, gc,
-                           0, MARGIN + i * LINE_HEIGHT,
-                           win_w, LINE_HEIGHT);
-            XSetForeground(dpy, gc, BlackPixel(dpy, 0));
+            XDrawString(dpy, win, gc, MARGIN, y, display, strlen(display));
+        } else {
+            if (entry_idx >= nentries) break;
+
+            char display[400];
+            snprintf(display, sizeof(display), "%-11s %s %s",
+                    entries[entry_idx].perms,
+                    entries[entry_idx].type_label,
+                    entries[entry_idx].name);
+
+            if (entry_idx == selected_idx) {
+                XSetForeground(dpy, gc, 0xC0C0C0);
+                XFillRectangle(dpy, win, gc,
+                               0, MARGIN + (i + 1) * LINE_HEIGHT,
+                               win_w, LINE_HEIGHT);
+                XSetForeground(dpy, gc, BlackPixel(dpy, 0));
+            }
+
+            XDrawString(dpy, win, gc, MARGIN, y, display, strlen(display));
         }
+    }
+    
+    /* Рисуем кнопку переключения режима */
+    char mode_button[50];
+    if (show_processes) {
+        snprintf(mode_button, sizeof(mode_button), "[F9] Files");
+    } else {
+        snprintf(mode_button, sizeof(mode_button), "[F9] Processes");
+    }
+    XDrawString(dpy, win, gc, win_w - 100, MARGIN + fontinfo->ascent, 
+               mode_button, strlen(mode_button));
+}
 
-        XDrawString(dpy, win, gc, MARGIN, y, display, strlen(display));
+/* Показать справку в отдельном окне */
+static void show_help(void)
+{
+    int help_pid = fork();
+    if (help_pid == 0) {
+        /* Создаем временный файл со справкой */
+        char *help_text =
+            "=== Minix File Manager v7.0 - Keyboard Shortcuts ===\n\n"
+            "Navigation:\n"
+            "  Up/Down arrows    - Navigate through files/processes\n"
+            "  Page Up/Page Down - Scroll page by page\n"
+            "  Home/End          - Jump to first/last item\n"
+            "  Enter             - Open selected file/directory\n\n"
+            "File Operations:\n"
+            "  F5 or R           - Refresh directory\n"
+            "  F2 or F           - Open file in editor\n"
+            "  Delete or D       - Delete selected file (with confirmation)\n\n"
+            "Directory Operations:\n"
+            "  Backspace         - Go to parent directory\n"
+            "  T                 - Open terminal in current directory\n"
+            "  H                 - Go to home directory\n"
+            "  /                 - Go to root directory\n\n"
+            "Process Management:\n"
+            "  F9                - Toggle files/processes view\n"
+            "  K                 - Kill selected process\n"
+            "  F8                - Refresh process list\n\n"
+            "Application:\n"
+            "  F1 or ?           - Show this help\n"
+            "  Q or Ctrl+Q       - Quit application\n"
+            "  Ctrl+L            - Refresh display\n\n"
+            "Press any key to close this window...";
+        
+        /* Создаем временный файл */
+        char temp_file[] = "/tmp/minixfm_help_XXXXXX";
+        int fd = mkstemp(temp_file);
+        if (fd != -1) {
+            write(fd, help_text, strlen(help_text));
+            close(fd);
+            
+            /* Открываем в xterm с less для просмотра */
+            execlp("xterm", "xterm", "-title", "Minix FM Help", 
+                   "-geometry", "80x25", "-e", "cat", temp_file, NULL);
+            
+            /* Если execlp не сработал, удаляем временный файл */
+            unlink(temp_file);
+        }
+        exit(1);
+    } else if (help_pid > 0) {
+        add_process(help_pid, "xterm (help)");
     }
 }
 
@@ -228,6 +418,8 @@ static void open_entry(int idx)
             if (pid == 0) {
                 execlp("xterm", "xterm", "-e", "vi", filepath, NULL);
                 exit(1);
+            } else if (pid > 0) {
+                add_process(pid, "xterm (vi editor)");
             }
         } else {
             fprintf(stderr, "Cannot open non-regular file: %s\n", filepath);
@@ -242,37 +434,14 @@ static void open_terminal(void)
         chdir(cwd);
         execlp("xterm", "xterm", NULL);
         exit(1);
+    } else if (pid > 0) {
+        add_process(pid, "xterm");
     }
-}
-
-static void show_help(void)
-{
-    printf("\n=== Minix File Manager v7.0 - Keyboard Shortcuts ===\n\n");
-    printf("Navigation:\n");
-    printf("  Up/Down arrows    - Navigate through files\n");
-    printf("  Page Up/Page Down - Scroll page by page\n");
-    printf("  Home/End          - Jump to first/last file\n");
-    printf("  Enter             - Open selected file/directory\n\n");
-    
-    printf("File Operations:\n");
-    printf("  F5 or R           - Refresh directory\n");
-    printf("  F2 or F           - Open file in editor\n");
-    printf("  Delete or D       - Delete selected file (with confirmation)\n\n");
-    
-    printf("Directory Operations:\n");
-    printf("  Backspace         - Go to parent directory\n");
-    printf("  T                 - Open terminal in current directory\n");
-    printf("  H                 - Go to home directory\n");
-    printf("  /                 - Go to root directory\n\n");
-    
-    printf("Application:\n");
-    printf("  F1 or ?           - Show this help\n");
-    printf("  Q or Ctrl+Q       - Quit application\n");
-    printf("  Ctrl+L            - Refresh display\n\n");
 }
 
 static int confirm_dialog(const char *message)
 {
+    /* Простой диалог подтверждения в консоли */
     printf("%s (y/N): ", message);
     fflush(stdout);
     
@@ -329,8 +498,25 @@ static long diff_ms(struct timespec a, struct timespec b)
 static void handle_click(int y)
 {
     int visible_lines = win_h / LINE_HEIGHT;
-    int idx = (y - MARGIN) / LINE_HEIGHT + scroll_offset;
-    if (idx < 0 || idx >= nentries) return;
+    int idx = (y - MARGIN - LINE_HEIGHT) / LINE_HEIGHT + scroll_offset;
+    if (idx < 0) return;
+    
+    /* Проверяем, не кликнули ли на кнопку переключения режима */
+    if (y < MARGIN + LINE_HEIGHT && y > MARGIN) {
+        if (win_w - 120 < win_w) { /* Упрощенная проверка координат */
+            show_processes = !show_processes;
+            selected_idx = -1;
+            scroll_offset = 0;
+            draw_list();
+            return;
+        }
+    }
+
+    if (show_processes) {
+        if (idx >= nprocesses) return;
+    } else {
+        if (idx >= nentries) return;
+    }
 
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
@@ -340,7 +526,9 @@ static void handle_click(int y)
     draw_list();
 
     if (idx == last_click_idx && diff < DOUBLE_CLICK_DELAY) {
-        open_entry(idx);
+        if (!show_processes) {
+            open_entry(idx);
+        }
         last_click_idx = -1;
     } else {
         last_click_idx = idx;
@@ -355,8 +543,13 @@ static void scroll_up(void) {
 
 static void scroll_down(void) {
     int visible_lines = win_h / LINE_HEIGHT;
-    if (scroll_offset + visible_lines < nentries)
-        scroll_offset++;
+    if (show_processes) {
+        if (scroll_offset + visible_lines < nprocesses)
+            scroll_offset++;
+    } else {
+        if (scroll_offset + visible_lines < nentries)
+            scroll_offset++;
+    }
     draw_list();
 }
 
@@ -370,8 +563,13 @@ static void scroll_page_up(void) {
 static void scroll_page_down(void) {
     int visible_lines = win_h / LINE_HEIGHT;
     scroll_offset += visible_lines;
-    if (scroll_offset + visible_lines > nentries)
-        scroll_offset = nentries - visible_lines;
+    if (show_processes) {
+        if (scroll_offset + visible_lines > nprocesses)
+            scroll_offset = nprocesses - visible_lines;
+    } else {
+        if (scroll_offset + visible_lines > nentries)
+            scroll_offset = nentries - visible_lines;
+    }
     if (scroll_offset < 0) scroll_offset = 0;
     draw_list();
 }
@@ -384,9 +582,25 @@ static void scroll_to_top(void) {
 
 static void scroll_to_bottom(void) {
     int visible_lines = win_h / LINE_HEIGHT;
-    selected_idx = nentries - 1;
-    scroll_offset = nentries - visible_lines;
+    if (show_processes) {
+        selected_idx = nprocesses - 1;
+        scroll_offset = nprocesses - visible_lines;
+    } else {
+        selected_idx = nentries - 1;
+        scroll_offset = nentries - visible_lines;
+    }
     if (scroll_offset < 0) scroll_offset = 0;
+    draw_list();
+}
+
+static void toggle_process_view(void)
+{
+    show_processes = !show_processes;
+    selected_idx = -1;
+    scroll_offset = 0;
+    if (show_processes) {
+        update_process_list();
+    }
     draw_list();
 }
 
@@ -409,7 +623,14 @@ static void handle_key(XKeyEvent *key)
 
         case XK_Down: {
             int visible_lines = win_h / LINE_HEIGHT;
-            if (selected_idx < nentries - 1) selected_idx++;
+            int max_idx;
+            if (show_processes) {
+                max_idx = nprocesses - 1;
+            } else {
+                max_idx = nentries - 1;
+            }
+            
+            if (selected_idx < max_idx) selected_idx++;
             if (selected_idx >= scroll_offset + visible_lines)
                 scroll_offset++;
             draw_list();
@@ -434,13 +655,13 @@ static void handle_key(XKeyEvent *key)
 
         /* Основные операции */
         case XK_Return:
-            if (selected_idx >= 0)
+            if (selected_idx >= 0 && !show_processes)
                 open_entry(selected_idx);
             break;
             
         case XK_BackSpace:
-            /* Имитируем клик на ".." */
-            {
+            if (!show_processes) {
+                /* Имитируем клик на ".." */
                 int i;
                 for (i = 0; i < nentries; i++) {
                     if (strcmp(entries[i].name, "..") == 0) {
@@ -460,38 +681,66 @@ static void handle_key(XKeyEvent *key)
         case XK_F2:
         case XK_f:
         case XK_F:
-            if (selected_idx >= 0 && !entries[selected_idx].is_dir)
+            if (selected_idx >= 0 && !show_processes && !entries[selected_idx].is_dir)
                 open_entry(selected_idx);
             break;
             
         case XK_F5:
         case XK_r:
         case XK_R:
-            read_dir(cwd);
+            if (show_processes) {
+                update_process_list();
+            } else {
+                read_dir(cwd);
+            }
             draw_list();
+            break;
+            
+        case XK_F8:
+            update_process_list();
+            draw_list();
+            break;
+            
+        case XK_F9:
+            toggle_process_view();
             break;
             
         case XK_Delete:
         case XK_d:
         case XK_D:
-            delete_selected();
+            if (!show_processes) {
+                delete_selected();
+            }
+            break;
+            
+        case XK_k:
+        case XK_K:
+            if (show_processes && selected_idx >= 0) {
+                kill_process(selected_idx);
+            }
             break;
 
         /* Директории */
         case XK_t:
         case XK_T:
-            open_terminal();
+            if (!show_processes) {
+                open_terminal();
+            }
             break;
             
         case XK_h:
         case XK_H:
-            go_home();
+            if (!show_processes) {
+                go_home();
+            }
             break;
             
         case XK_slash:
-            strcpy(cwd, "/");
-            read_dir(cwd);
-            draw_list();
+            if (!show_processes) {
+                strcpy(cwd, "/");
+                read_dir(cwd);
+                draw_list();
+            }
             break;
 
         /* Приложение */
@@ -516,6 +765,10 @@ int main(int argc, char **argv)
 {
     printf("Minix File Manager v7.0 started\n");
     printf("Press F1 or ? for keyboard shortcuts\n");
+    
+    /* Инициализация списка процессов */
+    nprocesses = 0;
+    show_processes = 0;
     
     if (getcwd(cwd, sizeof(cwd)) == NULL)
         strcpy(cwd, "/");
