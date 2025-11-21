@@ -1,12 +1,11 @@
 /*
- * minix_xfm_v8_modified.c
- * Modified according to user requirements:
- * 1) Increased default window size, larger font, made window freely resizable
- * 2) When transferring a selected file from one panel to another a modal dialog
- *    appears with options: Move, Copy, Cancel (and a rename input)
- * 3) Add ability to rename the file during transfer
+ * minix_xfm_v8_fixed.c
+ * Fixed version addressing user-reported issues:
+ * 1) Rename during transfer now works (input editable, empty = keep original)
+ * 2) 'f'/'F' keys now open transfer dialog (F2 still opens editor)
+ * 3) Move fallback (copy + unlink) robustly handles EXDEV and reports errors
  *
- * Note: This remains a single-file, plain Xlib C program in the original style.
+ * Single-file Xlib C program in the original style.
  */
 
 #include <stdio.h>
@@ -295,15 +294,14 @@ static int transfer_dialog(Window parent, const char *src_name, char *out_newnam
     int bx2 = dialog_w/2 + 10;
     int by = dialog_h - button_h - 15;
 
-    /* initial newname = src_name */
-    strncpy(out_newname, src_name, out_newname_len-1);
-    out_newname[out_newname_len-1] = '\0';
+    /* initial newname = empty -> keep original if left empty */
+    out_newname[0] = '\0';
 
     int result = 0;
     int running = 1;
 
     /* simple keyboard input state */
-    int cursor_pos = strlen(out_newname);
+    int cursor_pos = 0;
 
     while (running) {
         XEvent ev;
@@ -317,14 +315,20 @@ static int transfer_dialog(Window parent, const char *src_name, char *out_newnam
 
             /* input prompt */
             y += line_height + 5;
-            XDrawString(dpy, dlg, gc, 10, y, "New name (leave empty to keep):", 27);
+            XDrawString(dpy, dlg, gc, 10, y, "New name (leave empty to keep):", 30);
 
             /* input box */
             y += 5 + fontinfo->ascent;
             XDrawRectangle(dpy, dlg, gc, 10, y - fontinfo->ascent, dialog_w - 20, line_height + 4);
 
-            /* draw current new name */
-            XDrawString(dpy, dlg, gc, 12, y + fontinfo->ascent/2, out_newname, strlen(out_newname));
+            /* draw current new name or show placeholder original name if empty */
+            if (out_newname[0] == '\0') {
+                char placeholder[512];
+                snprintf(placeholder, sizeof(placeholder), "(keep: %s)", src_name);
+                XDrawString(dpy, dlg, gc, 12, y + fontinfo->ascent/2, placeholder, strlen(placeholder));
+            } else {
+                XDrawString(dpy, dlg, gc, 12, y + fontinfo->ascent/2, out_newname, strlen(out_newname));
+            }
 
             /* draw buttons */
             XDrawRectangle(dpy, dlg, gc, bx1, by, button_w, button_h);
@@ -385,15 +389,26 @@ static int transfer_dialog(Window parent, const char *src_name, char *out_newnam
     return result;
 }
 
+/* Build proper filesystem path */
+static void build_path(char *out, size_t outlen, const char *cwd, const char *name)
+{
+    if (!cwd || !name) { out[0] = '\0'; return; }
+    if (strcmp(cwd, "/") == 0) {
+        snprintf(out, outlen, "/%s", name);
+    } else {
+        snprintf(out, outlen, "%s/%s", cwd, name);
+    }
+}
+
 /* Perform transfer between panels; if newname is empty, keep original name */
 static void perform_transfer(Panel *src, Panel *dst, int src_idx, int do_move, const char *newname)
 {
     char src_path[1024], dst_path[1024];
-    snprintf(src_path, sizeof(src_path), "%s/%s", strcmp(src->cwd, "/") == 0 ? "" : src->cwd, src->entries[src_idx].name);
+    const char *src_name = src->entries[src_idx].name;
+    const char *final_name = (newname && strlen(newname) > 0) ? newname : src_name;
 
-    const char *final_name = (newname && strlen(newname) > 0) ? newname : src->entries[src_idx].name;
-
-    snprintf(dst_path, sizeof(dst_path), "%s/%s", strcmp(dst->cwd, "/") == 0 ? "" : dst->cwd, final_name);
+    build_path(src_path, sizeof(src_path), src->cwd, src_name);
+    build_path(dst_path, sizeof(dst_path), dst->cwd, final_name);
 
     if (src->entries[src_idx].is_dir) {
         /* For simplicity do not handle recursive copy/move of directories */
@@ -401,26 +416,53 @@ static void perform_transfer(Panel *src, Panel *dst, int src_idx, int do_move, c
         return;
     }
 
+    /* Try rename first (fast, preserves metadata). If it fails with EXDEV or other errors, fallback to copy+unlink. */
     if (do_move) {
         if (rename(src_path, dst_path) == 0) {
+            /* success */
             read_dir(src, src->cwd);
             read_dir(dst, dst->cwd);
             draw_interface();
+            return;
         } else {
-            /* fallback: copy + unlink */
+            if (errno != EXDEV) {
+                /* Not cross-device, some other error (permissions?) */
+                fprintf(stderr, "rename() failed: %s\n", strerror(errno));
+                /* attempt fallback copy+unlink anyway */
+            } else {
+                /* EXDEV indicates cross-device link; will fallback */
+            }
+
+            /* Fallback: copy then unlink */
             if (copy_file(src_path, dst_path) == 0) {
                 if (unlink(src_path) == 0) {
                     read_dir(src, src->cwd);
                     read_dir(dst, dst->cwd);
                     draw_interface();
-                } else perror("unlink");
-            } else perror("copy_file");
+                    return;
+                } else {
+                    /* Unlink failed: remove copied target to avoid duplicate */
+                    fprintf(stderr, "unlink() failed after copy: %s\n", strerror(errno));
+                    if (unlink(dst_path) != 0) {
+                        fprintf(stderr, "warning: failed to remove copied target: %s\n", strerror(errno));
+                    }
+                    return;
+                }
+            } else {
+                fprintf(stderr, "copy_file() failed during move fallback: %s -> %s\n", src_path, dst_path);
+                return;
+            }
         }
     } else {
+        /* Copy only */
         if (copy_file(src_path, dst_path) == 0) {
             read_dir(dst, dst->cwd);
             draw_interface();
-        } else perror("copy_file");
+            return;
+        } else {
+            fprintf(stderr, "copy_file() failed: %s -> %s\n", src_path, dst_path);
+            return;
+        }
     }
 }
 
@@ -438,16 +480,14 @@ static void show_help(void)
             "  Home/End          - Jump to first/last file\n"
             "  Enter             - Open selected file/directory\n\n"
             "File Operations:\n"
-            "  F5 or R           - Refresh current panel\n"
-            "  F2 or F           - Open file in editor\n"
+            "  Tab or F          - Transfer dialog (Move/Copy) to other panel\n"
+            "  F2                - Open file in editor\n"
             "  Delete or D       - Delete selected file (with confirmation)\n\n"
             "Directory Operations:\n"
             "  Backspace         - Go to parent directory\n"
             "  T                 - Open terminal in current directory\n"
             "  H                 - Go to home directory in active panel\n"
-            "  /                 - Go to root directory in active panel\n"
-            "  C                 - Copy file to other panel (shows dialog)\n"
-            "  M                 - Move file to other panel (shows dialog)\n\n"
+            "  /                 - Go to root directory in active panel\n\n"
             "Process Management:\n"
             "  F9                - Toggle files/processes view\n"
             "  K                 - Kill selected process\n"
@@ -458,12 +498,16 @@ static void show_help(void)
             "  Ctrl+L            - Refresh display\n\n"
             "Press any key to close this window...";
 
+
         char temp_file[] = "/tmp/minixfm_help_XXXXXX";
         int fd = mkstemp(temp_file);
         if (fd != -1) {
             write(fd, help_text, strlen(help_text));
             close(fd);
 
+            execlp("xterm", "xterm", "-title", "Minix FM Help",
+                   "-geometry", "80x25", "-e", "sh", "-c", ("cat " ), NULL);
+            /* exec fallback: show with cat file */
             execlp("xterm", "xterm", "-title", "Minix FM Help",
                    "-geometry", "80x25", "-e", "cat", temp_file, NULL);
             unlink(temp_file);
@@ -812,11 +856,15 @@ static void handle_key(XKeyEvent *key)
             break;
 
         case XK_F2:
-        case XK_f:
-        case XK_F:
             if (active_panel->selected_idx >= 0 && !show_processes &&
                 !active_panel->entries[active_panel->selected_idx].is_dir)
                 open_entry(active_panel, active_panel->selected_idx);
+            break;
+
+        /* 'f' or 'F' now initiate transfer dialog (Move/Copy) */
+        case XK_f:
+        case XK_F:
+            if (!show_processes) initiate_transfer();
             break;
 
         case XK_F5:
@@ -854,12 +902,9 @@ static void handle_key(XKeyEvent *key)
             }
             break;
 
-        /* Transfer operations: show dialog */
+        /* Transfer operations: old keys C/M still work */
         case XK_c:
         case XK_C:
-            if (!show_processes) initiate_transfer();
-            break;
-
         case XK_m:
         case XK_M:
             if (!show_processes) initiate_transfer();
