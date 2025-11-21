@@ -815,10 +815,12 @@ static void handle_key(XKeyEvent *key)
             break;
 
         /* Функциональные клавиши */
-        case XK_F1:
-        case XK_question:
-            show_help();
-            break;
+        case XK_h:
+		case XK_H:
+			if (!show_processes) {
+				go_home();
+			}
+			break;
 
         case XK_F2:
         case XK_f:
