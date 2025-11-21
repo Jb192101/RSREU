@@ -815,7 +815,13 @@ static void handle_key(XKeyEvent *key)
             break;
 
         /* Функциональные клавиши */
-        case XK_h:
+        case XK_F1:
+		case XK_question:
+			show_help();
+			break;
+
+		/* Домой (переход в домашний каталог) */
+		case XK_h:
 		case XK_H:
 			if (!show_processes) {
 				go_home();
