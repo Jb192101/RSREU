@@ -19,8 +19,8 @@
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 
-#define LINE_HEIGHT 16
-#define MARGIN 5
+#define LINE_HEIGHT 20  /* Увеличенная высота строки */
+#define MARGIN 8        /* Увеличенные отступы */
 #define DOUBLE_CLICK_DELAY 300
 #define MAX_PROCESSES 50
 #define PANEL_SEPARATOR_WIDTH 4
@@ -63,8 +63,8 @@ static Process processes[MAX_PROCESSES];
 static int nprocesses = 0;
 static int show_processes = 0;
 
-static int win_w = 800;
-static int win_h = 500;
+static int win_w = 1200;  /* Увеличенное разрешение */
+static int win_h = 700;   /* Увеличенное разрешение */
 static int separator_x;
 
 /* Forward declarations */
@@ -73,6 +73,8 @@ static void read_dir(Panel *panel, const char *path);
 static void update_process_list(void);
 static void show_help(void);
 static void init_panel(Panel *panel, const char *initial_path);
+static int show_copy_move_dialog(const char *filename, char *new_name, int *operation);
+static int rename_file_dialog(const char *old_name, char *new_name);
 
 static void mode_to_str(mode_t mode, char *out)
 {
@@ -239,6 +241,156 @@ static void kill_process(int idx)
         }
     } else {
         perror("kill");
+    }
+}
+
+/* Функция для показа диалога копирования/перемещения */
+static int show_copy_move_dialog(const char *filename, char *new_name, int *operation)
+{
+    char temp_file[] = "/tmp/minixfm_dialog_XXXXXX";
+    int fd = mkstemp(temp_file);
+    if (fd == -1) return 0;
+    
+    char dialog_script[1024];
+    snprintf(dialog_script, sizeof(dialog_script),
+        "#!/bin/sh\n"
+        "xterm -title 'File Operation' -geometry 60x10 -e sh -c \""
+        "echo 'File: %s';"
+        "echo 'Choose operation:';"
+        "echo '1 - Copy to other panel';"
+        "echo '2 - Move to other panel';"
+        "echo '3 - Cancel';"
+        "echo -n 'Enter choice (1-3): ';"
+        "read choice;"
+        "if [ \\\"$choice\\\" = \\\"1\\\" ]; then"
+        "  echo -n 'Enter new filename (or press Enter for same name): ';"
+        "  read newname;"
+        "  echo 'COPY' > %s;"
+        "  echo \\\"$newname\\\" >> %s;"
+        "elif [ \\\"$choice\\\" = \\\"2\\\" ]; then"
+        "  echo -n 'Enter new filename (or press Enter for same name): ';"
+        "  read newname;"
+        "  echo 'MOVE' > %s;"
+        "  echo \\\"$newname\\\" >> %s;"
+        "else"
+        "  echo 'CANCEL' > %s;"
+        "fi"
+        "\"",
+        filename, temp_file, temp_file, temp_file, temp_file, temp_file);
+    
+    int result = system(dialog_script);
+    if (result == -1) {
+        close(fd);
+        unlink(temp_file);
+        return 0;
+    }
+    
+    FILE *f = fopen(temp_file, "r");
+    if (!f) {
+        close(fd);
+        unlink(temp_file);
+        return 0;
+    }
+    
+    char op[10];
+    if (fgets(op, sizeof(op), f)) {
+        op[strcspn(op, "\n")] = 0;
+        if (strcmp(op, "COPY") == 0) {
+            *operation = 1;
+        } else if (strcmp(op, "MOVE") == 0) {
+            *operation = 2;
+        } else {
+            fclose(f);
+            unlink(temp_file);
+            return 0;
+        }
+        
+        if (fgets(new_name, 256, f)) {
+            new_name[strcspn(new_name, "\n")] = 0;
+        } else {
+            strcpy(new_name, "");
+        }
+        
+        fclose(f);
+        unlink(temp_file);
+        return 1;
+    }
+    
+    fclose(f);
+    unlink(temp_file);
+    return 0;
+}
+
+/* Функция для переименования файла при перемещении */
+static int rename_file_dialog(const char *old_name, char *new_name)
+{
+    char temp_file[] = "/tmp/minixfm_rename_XXXXXX";
+    int fd = mkstemp(temp_file);
+    if (fd == -1) return 0;
+    
+    char dialog_script[512];
+    snprintf(dialog_script, sizeof(dialog_script),
+        "#!/bin/sh\n"
+        "xterm -title 'Rename File' -geometry 60x8 -e sh -c \""
+        "echo 'Moving file: %s';"
+        "echo -n 'Enter new filename (or press Enter to keep same name): ';"
+        "read newname;"
+        "echo \\\"$newname\\\" > %s"
+        "\"",
+        old_name, temp_file);
+    
+    int result = system(dialog_script);
+    if (result == -1) {
+        close(fd);
+        unlink(temp_file);
+        return 0;
+    }
+    
+    FILE *f = fopen(temp_file, "r");
+    if (!f) {
+        close(fd);
+        unlink(temp_file);
+        return 0;
+    }
+    
+    if (fgets(new_name, 256, f)) {
+        new_name[strcspn(new_name, "\n")] = 0;
+        fclose(f);
+        unlink(temp_file);
+        return 1;
+    }
+    
+    fclose(f);
+    unlink(temp_file);
+    return 0;
+}
+
+/* Функция для копирования файла/директории */
+static void copy_file_or_dir(const char *src, const char *dst)
+{
+    pid_t pid = fork();
+    if (pid == 0) {
+        struct stat st;
+        if (stat(src, &st) == 0 && S_ISDIR(st.st_mode)) {
+            execlp("cp", "cp", "-r", src, dst, NULL);
+        } else {
+            execlp("cp", "cp", src, dst, NULL);
+        }
+        exit(1);
+    } else if (pid > 0) {
+        waitpid(pid, NULL, 0);
+    }
+}
+
+/* Функция для перемещения файла/директории */
+static void move_file_or_dir(const char *src, const char *dst)
+{
+    pid_t pid = fork();
+    if (pid == 0) {
+        execlp("mv", "mv", src, dst, NULL);
+        exit(1);
+    } else if (pid > 0) {
+        waitpid(pid, NULL, 0);
     }
 }
 
@@ -410,14 +562,14 @@ static void show_help(void)
             "File Operations:\n"
             "  F5 or R           - Refresh current panel\n"
             "  F2 or F           - Open file in editor\n"
-            "  Delete or D       - Delete selected file (with confirmation)\n\n"
+            "  Delete or D       - Delete selected file (with confirmation)\n"
+            "  C                 - Copy file to other panel (with rename option)\n"
+            "  M                 - Move file to other panel (with rename option)\n\n"
             "Directory Operations:\n"
             "  Backspace         - Go to parent directory\n"
             "  T                 - Open terminal in current directory\n"
             "  H                 - Go to home directory in active panel\n"
-            "  /                 - Go to root directory in active panel\n"
-            "  C                 - Copy file to other panel\n"
-            "  M                 - Move file to other panel\n\n"
+            "  /                 - Go to root directory in active panel\n\n"
             "Process Management:\n"
             "  F9                - Toggle files/processes view\n"
             "  K                 - Kill selected process\n"
@@ -554,6 +706,51 @@ static void go_home(void)
     if (home) {
         strcpy(active_panel->cwd, home);
         read_dir(active_panel, active_panel->cwd);
+        draw_interface();
+    }
+}
+
+/* Функция для обработки копирования/перемещения */
+static void handle_copy_move(int is_move)
+{
+    Panel *source_panel = active_panel;
+    Panel *target_panel = (active_panel == &left_panel) ? &right_panel : &left_panel;
+    
+    if (source_panel->selected_idx < 0 || source_panel->selected_idx >= source_panel->nentries) {
+        return;
+    }
+    
+    Entry *entry = &source_panel->entries[source_panel->selected_idx];
+    char source_path[1024];
+    snprintf(source_path, sizeof(source_path), "%s/%s",
+             strcmp(source_panel->cwd, "/") == 0 ? "" : source_panel->cwd,
+             entry->name);
+    
+    char new_name[256];
+    int operation;
+    
+    if (show_copy_move_dialog(entry->name, new_name, &operation)) {
+        char target_name[256];
+        if (strlen(new_name) > 0) {
+            strcpy(target_name, new_name);
+        } else {
+            strcpy(target_name, entry->name);
+        }
+        
+        char target_path[1024];
+        snprintf(target_path, sizeof(target_path), "%s/%s",
+                 strcmp(target_panel->cwd, "/") == 0 ? "" : target_panel->cwd,
+                 target_name);
+        
+        if (operation == 1) { /* Copy */
+            copy_file_or_dir(source_path, target_path);
+        } else if (operation == 2) { /* Move */
+            move_file_or_dir(source_path, target_path);
+        }
+        
+        /* Refresh both panels */
+        read_dir(source_panel, source_panel->cwd);
+        read_dir(target_panel, target_panel->cwd);
         draw_interface();
     }
 }
@@ -826,6 +1023,21 @@ static void handle_key(XKeyEvent *key)
             }
             break;
 
+        /* Копирование и перемещение */
+        case XK_c:
+        case XK_C:
+            if (!show_processes) {
+                handle_copy_move(0); /* Copy */
+            }
+            break;
+            
+        case XK_m:
+        case XK_M:
+            if (!show_processes) {
+                handle_copy_move(1); /* Move */
+            }
+            break;
+
         /* Приложение */
         case XK_q:
         case XK_Q:
@@ -874,8 +1086,8 @@ int main(int argc, char **argv)
 
     XSizeHints hints;
     hints.flags = PSize | PMinSize | PMaxSize;
-    hints.min_width = 600;
-    hints.min_height = 400;
+    hints.min_width = 800;   /* Увеличен минимальный размер */
+    hints.min_height = 600;  /* Увеличен минимальный размер */
     hints.max_width = 2000;
     hints.max_height = 1200;
     XSetNormalHints(dpy, win, &hints);
@@ -885,8 +1097,12 @@ int main(int argc, char **argv)
     XStoreName(dpy, win, "Minix FM v8.0 - Dual Panel (Press F1 for help)");
     XMapWindow(dpy, win);
 
-    fontinfo = XLoadQueryFont(dpy, "fixed");
+    /* Загрузка большего шрифта */
+    fontinfo = XLoadQueryFont(dpy, "9x15");
+    if (!fontinfo) fontinfo = XLoadQueryFont(dpy, "8x13");
+    if (!fontinfo) fontinfo = XLoadQueryFont(dpy, "fixed");
     if (!fontinfo) fontinfo = XLoadQueryFont(dpy, "6x13");
+    
     gc = XCreateGC(dpy, win, 0, NULL);
     if (fontinfo) XSetFont(dpy, gc, fontinfo->fid);
 
