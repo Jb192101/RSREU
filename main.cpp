@@ -101,6 +101,8 @@ static void update_process_list(void);
 static void add_process(pid_t pid, const char *cmd);
 static int copy_file(const char *src, const char *dst);
 static void build_path(char *out, size_t outlen, const char *cwd, const char *name);
+static void scroll_panel(Panel *panel, int direction);
+
 
 /* Dialog prototypes */
 static int transfer_dialog(Window parent, const char *src_name, char *out_newname, int out_newname_len);
@@ -146,6 +148,16 @@ static int is_text_file(const char *path) {
     }
     return 1;
 }
+
+static void scroll_panel(Panel *panel, int direction) {
+    if (!panel) return;
+    panel->scroll_offset += direction;
+    if (panel->scroll_offset < 0) panel->scroll_offset = 0;
+    if (panel->scroll_offset >= panel->nentries)
+        panel->scroll_offset = panel->nentries - 1;
+    draw_interface();
+}
+
 
 /* Apply theme colors to globals and GC */
 static void apply_theme(void) {
@@ -271,82 +283,6 @@ static void build_path(char *out, size_t outlen, const char *cwd, const char *na
     if (!out || !cwd || !name) return;
     if (strcmp(cwd, "/") == 0) snprintf(out, outlen, "/%s", name);
     else snprintf(out, outlen, "%s/%s", cwd, name);
-}
-
-/* Drawing the main interface */
-static void draw_interface(void) {
-    if (!dpy || !win) return;
-    XClearWindow(dpy, win);
-
-    separator_x = win_w / 2;
-    int panel_width = separator_x - PANEL_SEPARATOR_WIDTH / 2;
-
-    /* Fill background */
-    XSetForeground(dpy, gc, bg_color);
-    XFillRectangle(dpy, win, gc, 0, 0, win_w, win_h);
-
-    /* Set fg for text */
-    XSetForeground(dpy, gc, fg_color);
-
-    /* Title */
-    char title[256];
-    snprintf(title, sizeof(title), "Minix FM - Dual Panel - %s",
-             (active_panel == &left_panel) ? "LEFT" : "RIGHT");
-    XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent, title, strlen(title));
-
-    /* Draw headers */
-    char left_header[512], right_header[512];
-    snprintf(left_header, sizeof(left_header), "LEFT: %s", left_panel.cwd);
-    snprintf(right_header, sizeof(right_header), "RIGHT: %s", right_panel.cwd);
-    XDrawString(dpy, win, gc, MARGIN, MARGIN + line_height + fontinfo->ascent, left_header, strlen(left_header));
-    XDrawString(dpy, win, gc, separator_x + MARGIN, MARGIN + line_height + fontinfo->ascent, right_header, strlen(right_header));
-
-    /* Draw separator */
-    XSetForeground(dpy, gc, sel_bg_color);
-    XFillRectangle(dpy, win, gc, separator_x - PANEL_SEPARATOR_WIDTH/2, 0, PANEL_SEPARATOR_WIDTH, win_h);
-    XSetForeground(dpy, gc, fg_color);
-
-    /* Column header line */
-    XDrawLine(dpy, win, gc, 0, MARGIN + line_height * 2, win_w, MARGIN + line_height * 2);
-
-    /* Left panel entries */
-    int y = MARGIN + line_height * 2 + fontinfo->ascent;
-    int visible_lines = (win_h - (MARGIN + line_height * 3)) / line_height;
-    int i;
-    for (i = left_panel.scroll_offset; i < left_panel.nentries && (i - left_panel.scroll_offset) < visible_lines; ++i) {
-        Entry *e = &left_panel.entries[i];
-        int draw_y = y + (i - left_panel.scroll_offset) * line_height;
-        if (i == left_panel.selected_idx && active_panel == &left_panel) {
-            /* highlight */
-            XSetForeground(dpy, gc, sel_bg_color);
-            XFillRectangle(dpy, win, gc, MARGIN, draw_y - fontinfo->ascent, panel_width - 2*MARGIN, line_height);
-            XSetForeground(dpy, gc, fg_color);
-        }
-        char buf[512];
-        snprintf(buf, sizeof(buf), "%-11s %s", e->perms, e->name);
-        XDrawString(dpy, win, gc, MARGIN, draw_y, buf, strlen(buf));
-    }
-
-    /* Right panel entries */
-    for (i = right_panel.scroll_offset; i < right_panel.nentries && (i - right_panel.scroll_offset) < visible_lines; ++i) {
-        Entry *e = &right_panel.entries[i];
-        int draw_y = y + (i - right_panel.scroll_offset) * line_height;
-        int x = separator_x + PANEL_SEPARATOR_WIDTH/2 + MARGIN;
-        if (i == right_panel.selected_idx && active_panel == &right_panel) {
-            XSetForeground(dpy, gc, sel_bg_color);
-            XFillRectangle(dpy, win, gc, x - MARGIN, draw_y - fontinfo->ascent, panel_width - 2*MARGIN, line_height);
-            XSetForeground(dpy, gc, fg_color);
-        }
-        char buf[512];
-        snprintf(buf, sizeof(buf), "%-11s %s", e->perms, e->name);
-        XDrawString(dpy, win, gc, x, draw_y, buf, strlen(buf));
-    }
-
-    /* Footer / help */
-    char footer[256];
-    snprintf(footer, sizeof(footer), "[T] Theme  [P] Chmod  [C/M/F] Transfer  [F1/?] Help  [Tab] Switch Panel");
-    XDrawString(dpy, win, gc, MARGIN, win_h - MARGIN, footer, strlen(footer));
-    XFlush(dpy);
 }
 
 /* Transfer dialog: modal window for Move/Copy/Cancel with rename input */
@@ -843,85 +779,108 @@ static void handle_key(XKeyEvent *key) {
     }
 }
 
-/* Draw entire file manager interface */
 static void draw_interface(void) {
+    int panel_mid = win_w / 2;
+    int left_w = panel_mid - PANEL_SEPARATOR_WIDTH / 2;
+    int right_x = panel_mid + PANEL_SEPARATOR_WIDTH / 2;
+    int right_w = win_w - right_x;
+    int i, y;
+
+    /* Очистка окна */
     XClearWindow(dpy, win);
 
-    /* Panel width */
-    int panel_mid = win_w / 2;
-    int left_w = panel_mid - PANEL_SEPARATOR_WIDTH/2;
-    int right_x = panel_mid + PANEL_SEPARATOR_WIDTH/2;
-    int right_w = win_w - right_x;
+    /* Заголовок окна */
+    XStoreName(dpy, win,
+        (active_panel == &left_panel)
+            ? "Minix FM (C Version) - LEFT panel active | F1: Help"
+            : "Minix FM (C Version) - RIGHT panel active | F1: Help"
+    );
 
-    /* Title */
-    char title[512];
-    snprintf(title, sizeof(title), "Minix FM (C Version) - %s panel active | F1: Help",
-             (active_panel == &left_panel) ? "LEFT" : "RIGHT");
-    XStoreName(dpy, win, title);
+    /* Отрисовка заголовка панелей */
+    XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent,
+        left_panel.cwd, strlen(left_panel.cwd));
 
-    /* Panel headers */
-    char header[1024];
-    snprintf(header, sizeof(header), "LEFT:  %s", left_panel.cwd);
-    XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent, header, strlen(header));
-    snprintf(header, sizeof(header), "RIGHT: %s", right_panel.cwd);
-    XDrawString(dpy, win, gc, right_x + MARGIN, MARGIN + fontinfo->ascent, header, strlen(header));
+    XDrawString(dpy, win, gc, right_x + MARGIN, MARGIN + fontinfo->ascent,
+        right_panel.cwd, strlen(right_panel.cwd));
 
-    /* Column header */
-    XDrawString(dpy, win, gc, MARGIN, MARGIN + line_height + fontinfo->ascent, "Permissions  Type  Name", 23);
-    XDrawString(dpy, win, gc, right_x + MARGIN, MARGIN + line_height + fontinfo->ascent, "Permissions  Type  Name", 23);
+    /* Заголовок столбцов */
+    XDrawString(dpy, win, gc, MARGIN,
+        MARGIN + line_height + fontinfo->ascent,
+        "Permissions  Type  Name", 23);
 
-    /* Separator line */
-    XDrawLine(dpy, win, gc, 0, MARGIN + line_height * 2, win_w, MARGIN + line_height * 2);
+    XDrawString(dpy, win, gc, right_x + MARGIN,
+        MARGIN + line_height + fontinfo->ascent,
+        "Permissions  Type  Name", 23);
 
-    /* Vertical separator */
-    XSetForeground(dpy, gc, dark_mode ? WhitePixel(dpy,0) : BlackPixel(dpy,0));
-    XFillRectangle(dpy, win, gc, panel_mid - PANEL_SEPARATOR_WIDTH/2, 0, PANEL_SEPARATOR_WIDTH, win_h);
+    /* Линия-разделитель */
+    XDrawLine(dpy, win, gc, 0,
+        MARGIN + line_height * 2,
+        win_w, MARGIN + line_height * 2);
 
-    /* Back to normal color */
+    /* Вертикальный разделитель */
+    XSetForeground(dpy, gc, dark_mode ? WhitePixel(dpy, 0) : BlackPixel(dpy, 0));
+    XFillRectangle(dpy, win, gc,
+        panel_mid - PANEL_SEPARATOR_WIDTH / 2, 0,
+        PANEL_SEPARATOR_WIDTH, win_h);
+
+    /* Вернуть цвет текста */
     XSetForeground(dpy, gc, fg_color);
 
-    /* File listings */
+    /* Сколько строк помещается */
     int visible = (win_h - (MARGIN + line_height * 3)) / line_height;
-    int i, y;
+
+    /* ----------- ОТРИСОВКА ЛЕВОЙ ПАНЕЛИ ----------- */
     for (i = 0; i < visible; i++) {
         int idx = i + left_panel.scroll_offset;
         y = MARGIN + (i + 3) * line_height + fontinfo->ascent;
+
         if (idx < left_panel.nentries) {
             Entry *e = &left_panel.entries[idx];
             char line[512];
-            snprintf(line, sizeof(line), "%-10s %-5s %s", e->perms, e->type_label, e->name);
+            snprintf(line, sizeof(line), "%-10s %-5s %s",
+                e->perms, e->type_label, e->name);
 
             if (&left_panel == active_panel && idx == left_panel.selected_idx) {
                 XSetForeground(dpy, gc, 0x808080);
-                XFillRectangle(dpy, win, gc, 0, y - line_height, left_w, line_height);
+                XFillRectangle(dpy, win, gc, 0,
+                               y - line_height, left_w, line_height);
                 XSetForeground(dpy, gc, fg_color);
             }
+
             XDrawString(dpy, win, gc, MARGIN, y, line, strlen(line));
         }
     }
 
+    /* ----------- ОТРИСОВКА ПРАВОЙ ПАНЕЛИ ----------- */
     for (i = 0; i < visible; i++) {
         int idx = i + right_panel.scroll_offset;
         y = MARGIN + (i + 3) * line_height + fontinfo->ascent;
+
         if (idx < right_panel.nentries) {
             Entry *e = &right_panel.entries[idx];
             char line[512];
-            snprintf(line, sizeof(line), "%-10s %-5s %s", e->perms, e->type_label, e->name);
+            snprintf(line, sizeof(line), "%-10s %-5s %s",
+                e->perms, e->type_label, e->name);
 
             if (&right_panel == active_panel && idx == right_panel.selected_idx) {
                 XSetForeground(dpy, gc, 0x808080);
-                XFillRectangle(dpy, win, gc, right_x, y - line_height, right_w, line_height);
+                XFillRectangle(dpy, win, gc, right_x,
+                               y - line_height, right_w, line_height);
                 XSetForeground(dpy, gc, fg_color);
             }
+
             XDrawString(dpy, win, gc, right_x + MARGIN, y, line, strlen(line));
         }
     }
 
-    /* Mode button */
-    XDrawString(dpy, win, gc, win_w - 170, MARGIN + fontinfo->ascent,
-                dark_mode ? "[T] Light mode" : "[T] Dark mode",
-                dark_mode ? 16 : 15);
+    /* ----------- Смена темы ----------- */
+    const char *theme_text = dark_mode ? "[T] Light mode" : "[T] Dark mode";
+    XDrawString(dpy, win, gc,
+                win_w - (strlen(theme_text) * 8) - 10,
+                MARGIN + fontinfo->ascent,
+                theme_text, strlen(theme_text));
 }
+
 
 /* MAIN PROGRAM */
 int main(int argc, char **argv) {
