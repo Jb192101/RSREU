@@ -1,20 +1,3 @@
-/* minix_xfm_final.c
- *
- * Полная версия в C-стиле.
- * Функции:
- *  - Dual-panel файловый менеджер на Xlib
- *  - Transfer dialog (Move / Copy / Cancel) с возможностью переименования
- *  - Help dialog (встроенный) с корректной перерисовкой
- *  - Chmod dialog (изменение прав доступа) с чекбоксами для u/g/o rwx
- *  - Тёмная/светлая тема (клавиша T)
- *  - Клавиши: F1/? - help, C/M/F - transfer, P - chmod, T - theme, Tab/Left/Right - switch panel
- *
- * Компиляция:
- *   gcc -o minixfm minix_xfm_final.c -lX11
- *
- * Примечание: упрощённая и аккуратная реализация — без рекурсивного копирования директорий.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -174,6 +157,13 @@ static void apply_theme(void) {
         XSetForeground(dpy, gc, fg_color);
         XSetBackground(dpy, gc, bg_color);
     }
+    /* If main window exists, set its background to our theme and clear */
+    if (dpy && win) {
+        XSetWindowBackground(dpy, win, bg_color);
+        XSetWindowBorder(dpy, win, fg_color);
+        XClearWindow(dpy, win);
+        XFlush(dpy);
+    }
 }
 
 /* Initialize single panel */
@@ -295,9 +285,14 @@ static int transfer_dialog(Window parent, const char *src_name, char *out_newnam
     int sy = (win_h - dialog_h) / 2;
     Window dlg = XCreateSimpleWindow(dpy, parent, sx, sy, dialog_w, dialog_h, 2, fg_color, bg_color);
 
+    /* ensure background/border use theme */
+    XSetWindowBackground(dpy, dlg, bg_color);
+    XSetWindowBorder(dpy, dlg, fg_color);
+
     /* Select for expose, key, button events */
     XSelectInput(dpy, dlg, ExposureMask | KeyPressMask | ButtonPressMask | StructureNotifyMask);
     XMapWindow(dpy, dlg);
+    XClearWindow(dpy, dlg);
     XFlush(dpy);
 
     /* initialize output */
@@ -347,6 +342,7 @@ static int transfer_dialog(Window parent, const char *src_name, char *out_newnam
             }
 
             /* Draw buttons */
+            XSetForeground(dpy, gc, fg_color);
             XDrawRectangle(dpy, dlg, gc, bx_move, by, button_w, button_h);
             XDrawString(dpy, dlg, gc, bx_move + 20, by + fontinfo->ascent + 6, "Move", 4);
 
@@ -367,8 +363,6 @@ static int transfer_dialog(Window parent, const char *src_name, char *out_newnam
                 result = 2; running = 0;
             } else if (rx >= bx_cancel && rx <= bx_cancel + button_w && ry >= by && ry <= by + button_h) {
                 result = 0; running = 0;
-            } else {
-                /* click inside dialog - nothing special; keyboard will be read anyway */
             }
         }
         else if (ev.type == KeyPress && ev.xkey.window == dlg) {
@@ -382,7 +376,6 @@ static int transfer_dialog(Window parent, const char *src_name, char *out_newnam
                     int L = strlen(out_newname);
                     if (L > 0) out_newname[L-1] = '\0';
                 }
-                /* redraw */
                 XClearWindow(dpy, dlg);
                 XFlush(dpy);
             } else {
@@ -485,8 +478,11 @@ static void show_help_dialog(void) {
     int sx = (win_w - dialog_w) / 2;
     int sy = (win_h - dialog_h) / 2;
     Window dlg = XCreateSimpleWindow(dpy, win, sx, sy, dialog_w, dialog_h, 2, fg_color, bg_color);
+    XSetWindowBackground(dpy, dlg, bg_color);
+    XSetWindowBorder(dpy, dlg, fg_color);
     XSelectInput(dpy, dlg, ExposureMask | KeyPressMask | ButtonPressMask | StructureNotifyMask);
     XMapWindow(dpy, dlg);
+    XClearWindow(dpy, dlg);
     XFlush(dpy);
 
     int running = 1;
@@ -536,8 +532,11 @@ static void chmod_dialog(const char *filepath, mode_t old_mode) {
     int sx = (win_w - dialog_w) / 2;
     int sy = (win_h - dialog_h) / 2;
     Window dlg = XCreateSimpleWindow(dpy, win, sx, sy, dialog_w, dialog_h, 2, fg_color, bg_color);
+    XSetWindowBackground(dpy, dlg, bg_color);
+    XSetWindowBorder(dpy, dlg, fg_color);
     XSelectInput(dpy, dlg, ExposureMask | ButtonPressMask | KeyPressMask);
     XMapWindow(dpy, dlg);
+    XClearWindow(dpy, dlg);
     XFlush(dpy);
 
     /* flags: u r w x, g r w x, o r w x */
@@ -797,6 +796,7 @@ static void draw_interface(void) {
     );
 
     /* Отрисовка заголовка панелей */
+    XSetForeground(dpy, gc, fg_color);
     XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent,
         left_panel.cwd, strlen(left_panel.cwd));
 
@@ -817,8 +817,8 @@ static void draw_interface(void) {
         MARGIN + line_height * 2,
         win_w, MARGIN + line_height * 2);
 
-    /* Вертикальный разделитель */
-    XSetForeground(dpy, gc, dark_mode ? WhitePixel(dpy, 0) : BlackPixel(dpy, 0));
+    /* Вертикальный разделитель - используем цвет выделения / контраста */
+    XSetForeground(dpy, gc, sel_bg_color);
     XFillRectangle(dpy, win, gc,
         panel_mid - PANEL_SEPARATOR_WIDTH / 2, 0,
         PANEL_SEPARATOR_WIDTH, win_h);
@@ -841,7 +841,7 @@ static void draw_interface(void) {
                 e->perms, e->type_label, e->name);
 
             if (&left_panel == active_panel && idx == left_panel.selected_idx) {
-                XSetForeground(dpy, gc, 0x808080);
+                XSetForeground(dpy, gc, sel_bg_color);
                 XFillRectangle(dpy, win, gc, 0,
                                y - line_height, left_w, line_height);
                 XSetForeground(dpy, gc, fg_color);
@@ -863,7 +863,7 @@ static void draw_interface(void) {
                 e->perms, e->type_label, e->name);
 
             if (&right_panel == active_panel && idx == right_panel.selected_idx) {
-                XSetForeground(dpy, gc, 0x808080);
+                XSetForeground(dpy, gc, sel_bg_color);
                 XFillRectangle(dpy, win, gc, right_x,
                                y - line_height, right_w, line_height);
                 XSetForeground(dpy, gc, fg_color);
@@ -881,9 +881,31 @@ static void draw_interface(void) {
                 theme_text, strlen(theme_text));
 }
 
+/* Print help to stdout (for CLI usage) */
+static void print_cli_help_and_exit(const char *prog) {
+    printf("%s - simple dual-panel Xlib file manager (C)\n", prog);
+    printf("Usage: %s [options]\n", prog);
+    printf("  -h, --help      Print this help and exit (useful if X dialogs are problematic)\n");
+    printf("Keys:\n");
+    printf("  Tab / Left/Right  - switch panels\n");
+    printf("  Up/Down           - navigate\n");
+    printf("  Enter             - open file (editor)\n");
+    printf("  C / M / F         - transfer (Move/Copy/Cancel) with rename field\n");
+    printf("  P                 - change permissions (chmod dialog)\n");
+    printf("  T                 - toggle theme (light/dark)\n");
+    printf("  F1 or ?           - show graphical help\n");
+    printf("  Ctrl+Q            - quit\n");
+    exit(0);
+}
 
 /* MAIN PROGRAM */
 int main(int argc, char **argv) {
+    if (argc > 1) {
+        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+            print_cli_help_and_exit(argv[0]);
+        }
+    }
+
     char start_cwd[MAX_PATH];
     if (!getcwd(start_cwd, sizeof(start_cwd))) strcpy(start_cwd, "/");
 
@@ -898,6 +920,7 @@ int main(int argc, char **argv) {
     }
 
     int screen = DefaultScreen(dpy);
+    /* Create window using temporary default colors; we'll apply theme after GC created */
     win = XCreateSimpleWindow(dpy, RootWindow(dpy, screen),
                               0, 0, win_w, win_h, 1,
                               BlackPixel(dpy, screen), WhitePixel(dpy, screen));
@@ -922,7 +945,13 @@ int main(int argc, char **argv) {
         line_height = fontinfo->ascent + fontinfo->descent + 4;
     }
 
+    /* Apply initial theme and set window background/border to avoid white flashes */
     apply_theme();
+    XSetWindowBackground(dpy, win, bg_color);
+    XSetWindowBorder(dpy, win, fg_color);
+    XClearWindow(dpy, win);
+    XFlush(dpy);
+
     draw_interface();
 
     XEvent ev;
