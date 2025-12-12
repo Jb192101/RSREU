@@ -39,6 +39,9 @@ typedef struct Entry {
 } Entry;
 
 typedef struct Panel {
+	int sorted;                        
+	Entry original_entries[MAX_ENTRIES];
+	int original_nentries;
     Entry entries[MAX_ENTRIES];
     int nentries;
     char cwd[MAX_PATH];
@@ -222,6 +225,12 @@ static void read_dir(Panel *panel, const char *path) {
     closedir(d);
     panel->nentries = idx;
     panel->selected_idx = (panel->nentries > 0) ? 0 : -1;
+	
+	memcpy(panel->original_entries, panel->entries,
+		   sizeof(Entry) * panel->nentries);
+	panel->original_nentries = panel->nentries;
+	
+	panel->sorted = 0;
 }
 
 /* Update process list by culling dead pids */
@@ -662,6 +671,30 @@ static void handle_click(int x, int y, int button) {
     }
 }
 
+static int entry_cmp(const void *a, const void *b) {
+    const Entry *ea = (const Entry*)a;
+    const Entry *eb = (const Entry*)b;
+    return strcasecmp(ea->name, eb->name);
+}
+
+static void toggle_sort_panel(Panel *p) {
+    if (!p) return;
+
+    if (p->sorted == 0) {
+        qsort(p->entries, p->nentries, sizeof(Entry), entry_cmp);
+        p->sorted = 1;
+    } else {
+        memcpy(p->entries, p->original_entries,
+               sizeof(Entry) * p->original_nentries);
+        p->nentries = p->original_nentries;
+        p->sorted = 0;
+    }
+
+    p->selected_idx = (p->nentries > 0) ? 0 : -1;
+    p->scroll_offset = 0;
+}
+
+
 /* Handle keyboard events */
 static void handle_key(XKeyEvent *key) {
     KeySym ks = XLookupKeysym(key, 0);
@@ -726,6 +759,11 @@ static void handle_key(XKeyEvent *key) {
             show_help_dialog();
             draw_interface();
             break;
+		case XK_s:
+		case XK_S:
+			toggle_sort_panel(active_panel);
+			draw_interface();
+			break;
         case XK_c: case XK_C:
         case XK_m: case XK_M:
         case XK_f: case XK_F:
