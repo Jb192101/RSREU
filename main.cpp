@@ -36,15 +36,21 @@ typedef struct Entry {
     char perms[12];
     mode_t mode;
     char type_label[8];
+    ino_t inode;      // Добавлено: номер инода
 } Entry;
 
 typedef struct Panel {
+    int sorted;
+    Entry original_entries[MAX_ENTRIES];
+    int original_nentries;
     Entry entries[MAX_ENTRIES];
     int nentries;
     char cwd[MAX_PATH];
     int selected_idx;
     int scroll_offset;
     int has_focus;
+    int show_hidden;   // Флаг для отображения скрытых файлов
+    int show_inode;    // Флаг для отображения инодов
 } Panel;
 
 typedef struct ProcessInfo {
@@ -85,7 +91,8 @@ static void add_process(pid_t pid, const char *cmd);
 static int copy_file(const char *src, const char *dst);
 static void build_path(char *out, size_t outlen, const char *cwd, const char *name);
 static void scroll_panel(Panel *panel, int direction);
-
+static void toggle_hidden_files(Panel *panel);
+static void toggle_inode_display(Panel *panel);
 
 /* Dialog prototypes */
 static int transfer_dialog(Window parent, const char *src_name, char *out_newname, int out_newname_len);
@@ -141,6 +148,20 @@ static void scroll_panel(Panel *panel, int direction) {
     draw_interface();
 }
 
+/* Toggle hidden files display */
+static void toggle_hidden_files(Panel *panel) {
+    if (!panel) return;
+    panel->show_hidden = !panel->show_hidden;
+    read_dir(panel, panel->cwd);  // Перечитываем директорию с новыми настройками
+    draw_interface();
+}
+
+/* Toggle inode display */
+static void toggle_inode_display(Panel *panel) {
+    if (!panel) return;
+    panel->show_inode = !panel->show_inode;
+    draw_interface();
+}
 
 /* Apply theme colors to globals and GC */
 static void apply_theme(void) {
@@ -173,6 +194,8 @@ static void init_panel(Panel *panel, const char *initial_path) {
     panel->selected_idx = -1;
     panel->scroll_offset = 0;
     panel->has_focus = 0;
+    panel->show_hidden = 0;  // По умолчанию скрытые файлы не показываются
+    panel->show_inode = 0;   // По умолчанию иноды не показываются
     if (initial_path && initial_path[0]) strncpy(panel->cwd, initial_path, sizeof(panel->cwd)-1);
     else if (getcwd(panel->cwd, sizeof(panel->cwd)) == NULL) strcpy(panel->cwd, "/");
     read_dir(panel, panel->cwd);
@@ -189,17 +212,29 @@ static void read_dir(Panel *panel, const char *path) {
     }
     struct dirent *de;
     int idx = 0;
+    
+    // Добавляем запись ".." для навигации вверх
     if (strcmp(path, "/") != 0) {
         strncpy(panel->entries[idx].name, "..", sizeof(panel->entries[idx].name)-1);
         panel->entries[idx].is_dir = 1;
         strncpy(panel->entries[idx].type_label, "[DIR]", sizeof(panel->entries[idx].type_label)-1);
         panel->entries[idx].mode = S_IFDIR | 0755;
         strncpy(panel->entries[idx].perms, "drwxr-xr-x", sizeof(panel->entries[idx].perms)-1);
+        panel->entries[idx].inode = 0;  // У .. не отображаем инод
         idx = 1;
     }
+    
     char full[MAX_PATH];
     while ((de = readdir(d)) != NULL && idx < MAX_ENTRIES) {
+        // Пропускаем текущую директорию
         if (strcmp(de->d_name, ".") == 0) continue;
+        
+        // Проверяем скрытые файлы
+        if (!panel->show_hidden && de->d_name[0] == '.') {
+            // Пропускаем скрытые файлы, кроме ".."
+            continue;
+        }
+        
         snprintf(full, sizeof(full), "%s/%s", path, de->d_name);
         struct stat st;
         if (stat(full, &st) == 0) {
@@ -208,13 +243,23 @@ static void read_dir(Panel *panel, const char *path) {
             e->name[sizeof(e->name)-1] = '\0';
             e->is_dir = S_ISDIR(st.st_mode);
             e->mode = st.st_mode;
+            e->inode = st.st_ino;  // Сохраняем номер инода
+            
             mode_to_str(st.st_mode, e->perms);
-            if (e->is_dir) strncpy(e->type_label, "[DIR]", sizeof(e->type_label)-1);
-            else {
+            
+            if (e->is_dir) {
+                strncpy(e->type_label, "[DIR]", sizeof(e->type_label)-1);
+            } else {
                 if (S_ISREG(st.st_mode)) {
-                    if (is_text_file(full)) strncpy(e->type_label, "[TXT]", sizeof(e->type_label)-1);
-                    else strncpy(e->type_label, "[BIN]", sizeof(e->type_label)-1);
-                } else strncpy(e->type_label, "[?]", sizeof(e->type_label)-1);
+                    if (is_text_file(full)) 
+                        strncpy(e->type_label, "[TXT]", sizeof(e->type_label)-1);
+                    else 
+                        strncpy(e->type_label, "[BIN]", sizeof(e->type_label)-1);
+                } else if (S_ISLNK(st.st_mode)) {
+                    strncpy(e->type_label, "[LNK]", sizeof(e->type_label)-1);
+                } else {
+                    strncpy(e->type_label, "[?]", sizeof(e->type_label)-1);
+                }
             }
             idx++;
         }
@@ -222,6 +267,12 @@ static void read_dir(Panel *panel, const char *path) {
     closedir(d);
     panel->nentries = idx;
     panel->selected_idx = (panel->nentries > 0) ? 0 : -1;
+    
+    memcpy(panel->original_entries, panel->entries,
+           sizeof(Entry) * panel->nentries);
+    panel->original_nentries = panel->nentries;
+    
+    panel->sorted = 0;
 }
 
 /* Update process list by culling dead pids */
@@ -503,6 +554,8 @@ static void show_help_dialog(void) {
                 "Enter             - open file (editor)",
                 "C / M / F         - transfer: opens dialog (Move/Copy/Cancel) with rename field",
                 "P                 - change permissions (chmod dialog)",
+                "H                 - toggle hidden files display",
+                "I                 - toggle inode numbers display",
                 "T                 - toggle theme (light/dark)",
                 "F1 or ?           - show this help",
                 "Esc or click      - close this window"
@@ -662,6 +715,29 @@ static void handle_click(int x, int y, int button) {
     }
 }
 
+static int entry_cmp(const void *a, const void *b) {
+    const Entry *ea = (const Entry*)a;
+    const Entry *eb = (const Entry*)b;
+    return strcasecmp(ea->name, eb->name);
+}
+
+static void toggle_sort_panel(Panel *p) {
+    if (!p) return;
+
+    if (p->sorted == 0) {
+        qsort(p->entries, p->nentries, sizeof(Entry), entry_cmp);
+        p->sorted = 1;
+    } else {
+        memcpy(p->entries, p->original_entries,
+               sizeof(Entry) * p->original_nentries);
+        p->nentries = p->original_nentries;
+        p->sorted = 0;
+    }
+
+    p->selected_idx = (p->nentries > 0) ? 0 : -1;
+    p->scroll_offset = 0;
+}
+
 /* Handle keyboard events */
 static void handle_key(XKeyEvent *key) {
     KeySym ks = XLookupKeysym(key, 0);
@@ -726,6 +802,11 @@ static void handle_key(XKeyEvent *key) {
             show_help_dialog();
             draw_interface();
             break;
+        case XK_s:
+        case XK_S:
+            toggle_sort_panel(active_panel);
+            draw_interface();
+            break;
         case XK_c: case XK_C:
         case XK_m: case XK_M:
         case XK_f: case XK_F:
@@ -741,6 +822,14 @@ static void handle_key(XKeyEvent *key) {
                 read_dir(active_panel, active_panel->cwd);
                 draw_interface();
             }
+            break;
+        case XK_h: case XK_H:
+            /* toggle hidden files */
+            toggle_hidden_files(active_panel);
+            break;
+        case XK_i: case XK_I:
+            /* toggle inode display */
+            toggle_inode_display(active_panel);
             break;
         case XK_t: case XK_T:
             dark_mode = !dark_mode;
@@ -789,39 +878,57 @@ static void draw_interface(void) {
     XClearWindow(dpy, win);
 
     /* Заголовок окна */
-    XStoreName(dpy, win,
-        (active_panel == &left_panel)
-            ? "Minix FM (C Version) - LEFT panel active | F1: Help"
-            : "Minix FM (C Version) - RIGHT panel active | F1: Help"
-    );
+    char title[256];
+    const char *panel_name = (active_panel == &left_panel) ? "LEFT" : "RIGHT";
+    const char *hidden_status = active_panel->show_hidden ? "HIDDEN:ON" : "HIDDEN:OFF";
+    const char *inode_status = active_panel->show_inode ? "INODE:ON" : "INODE:OFF";
+    snprintf(title, sizeof(title), 
+             "Minix FM (C Version) - %s panel active | %s | %s | F1: Help", 
+             panel_name, hidden_status, inode_status);
+    XStoreName(dpy, win, title);
 
     /* Отрисовка заголовка панелей */
     XSetForeground(dpy, gc, fg_color);
     XDrawString(dpy, win, gc, MARGIN, MARGIN + fontinfo->ascent,
-        left_panel.cwd, strlen(left_panel.cwd));
+                left_panel.cwd, strlen(left_panel.cwd));
 
     XDrawString(dpy, win, gc, right_x + MARGIN, MARGIN + fontinfo->ascent,
-        right_panel.cwd, strlen(right_panel.cwd));
+                right_panel.cwd, strlen(right_panel.cwd));
 
     /* Заголовок столбцов */
+    char left_header[256];
+    char right_header[256];
+    
+    if (left_panel.show_inode) {
+        snprintf(left_header, sizeof(left_header), "Inode      Permissions  Type  Name");
+    } else {
+        snprintf(left_header, sizeof(left_header), "Permissions  Type  Name");
+    }
+    
+    if (right_panel.show_inode) {
+        snprintf(right_header, sizeof(right_header), "Inode      Permissions  Type  Name");
+    } else {
+        snprintf(right_header, sizeof(right_header), "Permissions  Type  Name");
+    }
+    
     XDrawString(dpy, win, gc, MARGIN,
-        MARGIN + line_height + fontinfo->ascent,
-        "Permissions  Type  Name", 23);
+                MARGIN + line_height + fontinfo->ascent,
+                left_header, strlen(left_header));
 
     XDrawString(dpy, win, gc, right_x + MARGIN,
-        MARGIN + line_height + fontinfo->ascent,
-        "Permissions  Type  Name", 23);
+                MARGIN + line_height + fontinfo->ascent,
+                right_header, strlen(right_header));
 
     /* Линия-разделитель */
     XDrawLine(dpy, win, gc, 0,
-        MARGIN + line_height * 2,
-        win_w, MARGIN + line_height * 2);
+              MARGIN + line_height * 2,
+              win_w, MARGIN + line_height * 2);
 
     /* Вертикальный разделитель - используем цвет выделения / контраста */
     XSetForeground(dpy, gc, sel_bg_color);
     XFillRectangle(dpy, win, gc,
-        panel_mid - PANEL_SEPARATOR_WIDTH / 2, 0,
-        PANEL_SEPARATOR_WIDTH, win_h);
+                   panel_mid - PANEL_SEPARATOR_WIDTH / 2, 0,
+                   PANEL_SEPARATOR_WIDTH, win_h);
 
     /* Вернуть цвет текста */
     XSetForeground(dpy, gc, fg_color);
@@ -837,8 +944,15 @@ static void draw_interface(void) {
         if (idx < left_panel.nentries) {
             Entry *e = &left_panel.entries[idx];
             char line[512];
-            snprintf(line, sizeof(line), "%-10s %-5s %s",
-                e->perms, e->type_label, e->name);
+            
+            if (left_panel.show_inode && strcmp(e->name, "..") != 0) {
+                // Для ".." не показываем инод
+                snprintf(line, sizeof(line), "%-10lu %-10s %-5s %s",
+                        e->inode, e->perms, e->type_label, e->name);
+            } else {
+                snprintf(line, sizeof(line), "%-10s %-5s %s",
+                        e->perms, e->type_label, e->name);
+            }
 
             if (&left_panel == active_panel && idx == left_panel.selected_idx) {
                 XSetForeground(dpy, gc, sel_bg_color);
@@ -859,8 +973,15 @@ static void draw_interface(void) {
         if (idx < right_panel.nentries) {
             Entry *e = &right_panel.entries[idx];
             char line[512];
-            snprintf(line, sizeof(line), "%-10s %-5s %s",
-                e->perms, e->type_label, e->name);
+            
+            if (right_panel.show_inode && strcmp(e->name, "..") != 0) {
+                // Для ".." не показываем инод
+                snprintf(line, sizeof(line), "%-10lu %-10s %-5s %s",
+                        e->inode, e->perms, e->type_label, e->name);
+            } else {
+                snprintf(line, sizeof(line), "%-10s %-5s %s",
+                        e->perms, e->type_label, e->name);
+            }
 
             if (&right_panel == active_panel && idx == right_panel.selected_idx) {
                 XSetForeground(dpy, gc, sel_bg_color);
@@ -873,7 +994,7 @@ static void draw_interface(void) {
         }
     }
 
-    /* ----------- Смена темы ----------- */
+    /* ----------- Статусная информация ----------- */
     const char *theme_text = dark_mode ? "[T] Light mode" : "[T] Dark mode";
     XDrawString(dpy, win, gc,
                 win_w - (strlen(theme_text) * 8) - 10,
@@ -892,6 +1013,8 @@ static void print_cli_help_and_exit(const char *prog) {
     printf("  Enter             - open file (editor)\n");
     printf("  C / M / F         - transfer (Move/Copy/Cancel) with rename field\n");
     printf("  P                 - change permissions (chmod dialog)\n");
+    printf("  H                 - toggle hidden files display\n");
+    printf("  I                 - toggle inode numbers display\n");
     printf("  T                 - toggle theme (light/dark)\n");
     printf("  F1 or ?           - show graphical help\n");
     printf("  Ctrl+Q            - quit\n");
