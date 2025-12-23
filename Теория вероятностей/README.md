@@ -6,6 +6,6 @@
 
 * [Лабораторная работа 2](https://github.com/Jb192101/RSREU/blob/main/Теория%20вероятностей/Lab2/lab2.ipynb) - [Условия](https://github.com/Jb192101/RSREU/blob/main/Теория%20вероятностей/Lab2/README.md)
 
-* [Лабораторная работа 3(в процессе)]
+* [Лабораторная работа 3](https://github.com/Jb192101/RSREU/tree/main/Теория%20вероятностей/Lab3) - [Условия](https://github.com/Jb192101/RSREU/blob/main/Теория%20вероятностей/Lab3/README.md)
 
 * [Лабораторная работа 4](https://github.com/Jb192101/RSREU/tree/main/Теория%20вероятностей/Lab4) - [Условия](https://github.com/Jb192101/RSREU/blob/main/Теория%20вероятностей/Lab4/README.md)
