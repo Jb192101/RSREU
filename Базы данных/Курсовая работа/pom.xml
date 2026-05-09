@@ -12,12 +12,16 @@
 	<groupId>org.jedi_bachelor.course_paper_db</groupId>
 	<artifactId>course_paper_db</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>course_paper_db</name>
+	<packaging>pom</packaging>
 	<description>Проект с клиент-серверным приложением для курсовой работы по БД</description>
 
 	<licenses>
 		<license/>
 	</licenses>
+
+	<modules>
+		<module>client-application</module>
+	</modules>
 
 	<developers>
 		<developer/>

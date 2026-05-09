@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  client-application:
+    build:
+      context: .
+      dockerfile: Dockerfile-client
+    container_name: course-paper-db-book-container
+    ports:
+      - "8081:8081"
+    networks:
+      - course-paper-db-network
+    restart: unless-stopped
+
+  book-postgres:
+    image: postgres:16-alpine
+    container_name: notification-postgres
+    environment:
+      POSTGRES_DB: ${BOOK_DB_NAME}
+      POSTGRES_USER: ${BOOK_DB_USER}
+      POSTGRES_PASSWORD: ${BOOK_DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TZ: UTC+3
+    ports:
+      - "${BOOK_DB_PORT}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data:rw,noexec,nosuid,size=256m
+    volumes:
+      - ./docker/db-init.sql
+      - ./docker/stored_procedures.sql
+      - ./docker/triggers.sql
+    shm_size: "256m"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h 127.0.0.1 -p 5432" ]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+    restart: unless-stopped
+
+networks:
+  course-paper-db-network:
+    driver: bridge
