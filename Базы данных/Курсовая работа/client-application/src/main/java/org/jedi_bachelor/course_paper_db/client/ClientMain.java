@@ -1,11 +1,12 @@
 package org.jedi_bachelor.course_paper_db.client;
 
-import org.springframework.boot.SpringApplication;
+import javafx.application.Application;
+import org.jedi_bachelor.course_paper_db.client.ui.MainApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class ClientMain {
     public static void main(String[] args) {
-        SpringApplication.run(ClientMain.class, args);
+        Application.launch(MainApplication.class, args);
     }
 }

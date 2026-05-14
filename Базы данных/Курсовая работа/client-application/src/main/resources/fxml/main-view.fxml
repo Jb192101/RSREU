@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane fx:id="mainBorderPane"
+            xmlns="http://javafx.com/javafx/17.0.2-ea"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.jedi_bachelor.course_paper_db.client.ui.MainController">
+
+    <top>
+        <VBox>
+            <!-- Верхняя панель инструментов -->
+            <ToolBar styleClass="top-toolbar">
+                <Button fx:id="toggleMenuButton"
+                        text="✕"
+                        onAction="#toggleMenu"
+                        styleClass="menu-toggle-button"/>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Label fx:id="usernameLabel"
+                       text="Администратор"
+                       styleClass="username-label"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Button text="🔄" onAction="#refreshCurrentView">
+                    <tooltip><Tooltip text="Обновить данные"/></tooltip>
+                </Button>
+
+                <Button text="📊" onAction="#openReports">
+                    <tooltip><Tooltip text="Отчёты"/></tooltip>
+                </Button>
+
+                <Button text="ℹ" onAction="#showAboutDialog">
+                    <tooltip><Tooltip text="О программе"/></tooltip>
+                </Button>
+
+                <Button text="🚪" onAction="#exitApplication">
+                    <tooltip><Tooltip text="Выход"/></tooltip>
+                </Button>
+            </ToolBar>
+        </VBox>
+    </top>
+
+    <left>
+        <!-- Боковое меню навигации -->
+        <VBox fx:id="navigationMenu"
+              styleClass="navigation-menu"
+              prefWidth="220">
+
+            <padding>
+                <Insets top="10" right="5" bottom="10" left="5"/>
+            </padding>
+
+            <Label text="НАВИГАЦИЯ"
+                   styleClass="menu-section-title"/>
+
+            <Button text="📚 Книги"
+                    userData="books"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Button text="✍️ Авторы"
+                    userData="authors"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Button text="🏢 Издательства"
+                    userData="publishers"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Button text="📂 Жанры"
+                    userData="genres"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Separator styleClass="menu-separator"/>
+
+            <Label text="РАБОТА С КЛИЕНТАМИ"
+                   styleClass="menu-section-title"/>
+
+            <Button text="👥 Клиенты"
+                    userData="clients"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Button text="📝 Заказы"
+                    userData="orders"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Button text="⭐ Отзывы"
+                    userData="reviews"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Separator styleClass="menu-separator"/>
+
+            <Label text="УПРАВЛЕНИЕ"
+                   styleClass="menu-section-title"/>
+
+            <Button text="🏪 Склад"
+                    userData="inventory"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Button text="🎫 Промокоды"
+                    userData="promocodes"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Button text="🚚 Доставка"
+                    userData="delivery"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <Separator styleClass="menu-separator"/>
+
+            <Button text="⚙️ Настройки"
+                    styleClass="nav-button"
+                    maxWidth="Infinity"/>
+        </VBox>
+    </left>
+
+    <center>
+        <!-- Основная область контента -->
+        <StackPane fx:id="contentArea" styleClass="content-area">
+            <Label text="Загрузка..." styleClass="loading-label"/>
+        </StackPane>
+    </center>
+
+    <bottom>
+        <!-- Статус-бар -->
+        <HBox styleClass="status-bar">
+            <Label fx:id="statusLabel" text="Готов к работе"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="© 2026 РГРТУ"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

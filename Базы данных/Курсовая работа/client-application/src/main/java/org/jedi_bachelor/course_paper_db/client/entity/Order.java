@@ -2,7 +2,8 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.jedi_bachelor.course_paper_db.entity.enums.OrderStatus;
+import org.jedi_bachelor.course_paper_db.client.entity.enums.OrderStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

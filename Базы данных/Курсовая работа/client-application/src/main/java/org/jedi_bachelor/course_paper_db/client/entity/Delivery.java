@@ -2,7 +2,8 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.jedi_bachelor.course_paper_db.entity.enums.DeliveryStatus;
+import org.jedi_bachelor.course_paper_db.client.entity.enums.DeliveryStatus;
+
 import java.time.LocalDateTime;
 
 @Entity
