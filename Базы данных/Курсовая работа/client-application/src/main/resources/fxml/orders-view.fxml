@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.jedi_bachelor.course_paper_db.client.ui.controllers.OrdersController"
+      style="-fx-padding: 20; -fx-background-color: white;">
+
+    <HBox spacing="10">
+        <ComboBox fx:id="customerFilter" promptText="Клиент" HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="statusFilter" promptText="Статус"/>
+        <Button text="Применить фильтр" onAction="#handleSearch"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="addButton" text="Создать заказ" onAction="#handleAdd"/>
+    </HBox>
+
+    <TableView fx:id="ordersTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn text="ID" prefWidth="60"/>
+            <TableColumn text="Дата" prefWidth="150"/>
+            <TableColumn text="Клиент" prefWidth="200"/>
+            <TableColumn text="Сумма" prefWidth="120"/>
+            <TableColumn text="Скидка" prefWidth="100"/>
+            <TableColumn text="Итого" prefWidth="120"/>
+            <TableColumn text="Статус" prefWidth="120"/>
+            <TableColumn text="Адрес доставки" prefWidth="200"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="10">
+        <Button fx:id="editButton" text="Редактировать" onAction="#handleEdit"/>
+        <Button fx:id="deleteButton" text="Удалить" onAction="#handleDelete"/>
+        <Button fx:id="refreshButton" text="Обновить" onAction="#handleRefresh"/>
+        <Button text="Изменить статус" onAction="#handleChangeStatus"/>
+        <Button text="Применить промокод" onAction="#handleApplyPromoCode"/>
+        <Button text="Отследить" onAction="#handleTrackOrder"/>
+    </HBox>
+
+    <TabPane>
+        <Tab text="Позиции заказа">
+            <TableView fx:id="orderItemsTable">
+                <columns>
+                    <TableColumn text="Книга" prefWidth="300"/>
+                    <TableColumn text="Кол-во" prefWidth="80"/>
+                    <TableColumn text="Цена" prefWidth="100"/>
+                    <TableColumn text="Сумма" prefWidth="100"/>
+                </columns>
+            </TableView>
+        </Tab>
+    </TabPane>
+</VBox>

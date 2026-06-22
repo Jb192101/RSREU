@@ -595,38 +595,6 @@ CREATE OR REPLACE TRIGGER trg_inventory_prevent_negative
     FOR EACH ROW
     EXECUTE FUNCTION fn_inventory_prevent_negative();
 
--- Предотвращение циклических ссылок
-CREATE OR REPLACE FUNCTION fn_genres_prevent_circular_reference()
-RETURNS TRIGGER AS $$
-DECLARE
-    v_parent_id BIGINT;
-BEGIN
-    -- Проверка на ссылку самого на себя
-    IF NEW.parent_genre_id = NEW.genre_id THEN
-        RAISE EXCEPTION 'Жанр не может быть родительским для самого себя';
-    END IF;
-
-    -- Проверка на циклические зависимости
-    v_parent_id := NEW.parent_genre_id;
-    WHILE v_parent_id IS NOT NULL LOOP
-        IF v_parent_id = NEW.genre_id THEN
-            RAISE EXCEPTION 'Обнаружена циклическая зависимость в иерархии жанров';
-        END IF;
-
-        SELECT parent_genre_id INTO v_parent_id
-        FROM genres
-        WHERE genre_id = v_parent_id;
-    END LOOP;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER trg_genres_prevent_circular_reference
-    BEFORE INSERT OR UPDATE ON genres
-    FOR EACH ROW
-    EXECUTE FUNCTION fn_genres_prevent_circular_reference();
-
 -- Запрет удаления жанра с книгами
 CREATE OR REPLACE FUNCTION fn_genres_prevent_delete_with_books()
 RETURNS TRIGGER AS $$

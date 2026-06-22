@@ -18,6 +18,8 @@ public abstract class BaseController {
     @FXML protected Button refreshButton;
     @FXML protected TextField searchField;
 
+    protected Label statusLabel;
+
     @FXML
     public abstract void initialize();
 
@@ -36,11 +38,20 @@ public abstract class BaseController {
     @FXML
     protected abstract void handleSearch();
 
+    public void setStatusLabel(Label statusLabel) {
+        this.statusLabel = statusLabel;
+    }
+
     protected void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+
+        // Увеличиваем размер окна, чтобы видеть полную ошибку
+        alert.getDialogPane().setPrefWidth(700);
+        alert.getDialogPane().setPrefHeight(400);
+
         alert.showAndWait();
     }
 
@@ -61,5 +72,11 @@ public abstract class BaseController {
         return alert.showAndWait()
                 .filter(response -> response == ButtonType.OK)
                 .isPresent();
+    }
+
+    protected void updateStatus(String message) {
+        if (statusLabel != null) {
+            statusLabel.setText(message);
+        }
     }
 }

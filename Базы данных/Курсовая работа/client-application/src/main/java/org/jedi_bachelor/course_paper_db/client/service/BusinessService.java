@@ -1,8 +1,9 @@
 package org.jedi_bachelor.course_paper_db.client.service;
 
-import lombok.RequiredArgsConstructor;
 import org.jedi_bachelor.course_paper_db.client.entity.*;
 import org.jedi_bachelor.course_paper_db.client.repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,28 +12,47 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class BusinessService {
-    private final BookRepository bookRepository;
+    @Lazy
+    @Autowired
+    private BookRepository bookRepository;
 
-    private final OrderRepository orderRepository;
+    @Lazy
+    @Autowired
+    private OrderRepository orderRepository;
 
-    private final OrderPositionRepository orderPositionRepository;
+    @Lazy
+    @Autowired
+    private OrderPositionRepository orderPositionRepository;
 
-    private final ClientRepository clientRepository;
+    @Lazy
+    @Autowired
+    private ClientRepository clientRepository;
 
-    private final AuthorRepository authorRepository;
+    @Lazy
+    @Autowired
+    private AuthorRepository authorRepository;
 
-    private final GenreRepository genreRepository;
+    @Lazy
+    @Autowired
+    private GenreRepository genreRepository;
 
-    private final InventoryRepository inventoryRepository;
+    @Lazy
+    @Autowired
+    private InventoryRepository inventoryRepository;
 
-    private final ResponseRepository responseRepository;
+    @Lazy
+    @Autowired
+    private ResponseRepository responseRepository;
 
-    private final PromoCodeRepository promoCodeRepository;
+    @Lazy
+    @Autowired
+    private PromoCodeRepository promoCodeRepository;
 
-    private final DeliveryRepository deliveryRepository;
+    @Lazy
+    @Autowired
+    private DeliveryRepository deliveryRepository;
 
     public List<Object[]> searchBooks(String searchTerm, Long genreId, Long authorId,
                                       BigDecimal minPrice, BigDecimal maxPrice,

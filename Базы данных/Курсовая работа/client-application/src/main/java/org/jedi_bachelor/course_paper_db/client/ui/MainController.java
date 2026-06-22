@@ -5,16 +5,14 @@ import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.jedi_bachelor.course_paper_db.client.service.BusinessService;
 import org.jedi_bachelor.course_paper_db.client.service.RepositoryService;
+import org.jedi_bachelor.course_paper_db.client.ui.controllers.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -59,7 +57,11 @@ public class MainController {
     }
 
     private void loadDefaultView() {
-        loadView("books");
+        // Показываем приветственное сообщение вместо загрузки по умолчанию
+        Label welcomeLabel = new Label("Добро пожаловать!\n\nВыберите раздел из меню слева");
+        welcomeLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #7f8c8d; -fx-alignment: center;");
+        contentArea.getChildren().setAll(welcomeLabel);
+        updateStatusBar("Выберите раздел для работы");
     }
 
     private void loadView(String viewName) {
@@ -70,39 +72,68 @@ public class MainController {
             if (viewCache.containsKey(viewName)) {
                 view = viewCache.get(viewName);
             } else {
-                // Загружаем новое представление
+                // Загружаем новое представление через Spring контекст
                 String fxmlPath = "/fxml/" + viewName + "-view.fxml";
+
+                // Проверяем существование ресурса
+                var resource = getClass().getResource(fxmlPath);
+                if (resource == null) {
+                    showPlaceholder(viewName);
+                    return;
+                }
+
+                // Получаем Spring контекст
+                var springContext = MainApplication.getSpringContext();
+
                 FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-                loader.setControllerFactory(MainApplication.getSpringContext()::getBean);
+                loader.setControllerFactory(springContext::getBean);
                 view = loader.load();
 
                 viewCache.put(viewName, view);
                 controllerCache.put(viewName, loader.getController());
+
+                // Передаём статусную метку в контроллер, если он наследник BaseController
+                Object controller = controllerCache.get(viewName);
+                if (controller instanceof BaseController) {
+                    ((BaseController) controller).setStatusLabel(statusLabel);
+                }
             }
 
             // Анимация перехода
-            FadeTransition fadeOut = new FadeTransition(Duration.millis(150), contentArea.getChildren().get(0));
-            fadeOut.setFromValue(1.0);
-            fadeOut.setToValue(0.0);
+            if (!contentArea.getChildren().isEmpty()) {
+                FadeTransition fadeOut = new FadeTransition(Duration.millis(150),
+                        contentArea.getChildren().get(0));
+                fadeOut.setFromValue(1.0);
+                fadeOut.setToValue(0.0);
 
-            fadeOut.setOnFinished(event -> {
+                fadeOut.setOnFinished(event -> {
+                    contentArea.getChildren().setAll(view);
+
+                    FadeTransition fadeIn = new FadeTransition(Duration.millis(150), view);
+                    fadeIn.setFromValue(0.0);
+                    fadeIn.setToValue(1.0);
+                    fadeIn.play();
+                });
+
+                fadeOut.play();
+            } else {
                 contentArea.getChildren().setAll(view);
-
-                FadeTransition fadeIn = new FadeTransition(Duration.millis(150), view);
-                fadeIn.setFromValue(0.0);
-                fadeIn.setToValue(1.0);
-                fadeIn.play();
-            });
-
-            fadeOut.play();
+            }
 
             updateStatusBar("Загружен раздел: " + getViewTitle(viewName));
 
         } catch (IOException e) {
             showError("Ошибка загрузки", "Не удалось загрузить представление: " + viewName);
             updateStatusBar("Ошибка загрузки: " + viewName);
+            showPlaceholder(viewName);
             e.printStackTrace();
         }
+    }
+
+    private void showPlaceholder(String viewName) {
+        Label placeholder = new Label("Раздел \"" + getViewTitle(viewName) + "\"\n\nВ разработке");
+        placeholder.setStyle("-fx-font-size: 18px; -fx-text-fill: #7f8c8d; -fx-alignment: center;");
+        contentArea.getChildren().setAll(placeholder);
     }
 
     @FXML
@@ -152,15 +183,12 @@ public class MainController {
     }
 
     @FXML
-    private void openReports() {
-        loadView("reports");
-    }
-
-    @FXML
     private void refreshCurrentView() {
         // Очищаем кэш и перезагружаем текущий раздел
         viewCache.clear();
         controllerCache.clear();
+
+        // Показываем приветственное сообщение
         loadDefaultView();
         updateStatusBar("Данные обновлены");
     }
@@ -177,11 +205,10 @@ public class MainController {
             case "genres" -> "Жанры";
             case "clients" -> "Клиенты";
             case "orders" -> "Заказы";
+            case "reviews" -> "Отзывы";
             case "inventory" -> "Склад";
             case "promocodes" -> "Промокоды";
-            case "reviews" -> "Отзывы";
             case "delivery" -> "Доставка";
-            case "reports" -> "Отчёты";
             default -> viewName;
         };
     }

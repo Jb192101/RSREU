@@ -22,7 +22,7 @@ public class BookRemnant {
     @Column(name = "last_restocked")
     private LocalDate lastRestocked;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "book_id", unique = true)
     private Book book;
 }

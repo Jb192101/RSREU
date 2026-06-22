@@ -448,6 +448,7 @@ RETURNS VOID AS $$
 DECLARE
     v_old_status VARCHAR(50);
     v_item RECORD;
+    v_new_status_rus VARCHAR(50);
 BEGIN
     -- Получаем текущий статус
     SELECT status INTO v_old_status
@@ -458,31 +459,45 @@ BEGIN
         RAISE EXCEPTION 'Заказ с ID % не найден', p_order_id;
     END IF;
 
-    -- Проверяем допустимость перехода (дублирует триггер для информативности)
+    -- Конвертируем английский статус в русский
+    v_new_status_rus := CASE p_new_status
+        WHEN 'PENDING_PAYMENT' THEN 'ожидает оплаты'
+        WHEN 'PAID' THEN 'оплачен'
+        WHEN 'PROCESSING' THEN 'обрабатывается'
+        WHEN 'CONFIRMED' THEN 'подтверждён'
+        WHEN 'SHIPPED' THEN 'отправлен'
+        WHEN 'DELIVERED' THEN 'доставлен'
+        WHEN 'CANCELLED' THEN 'отменён'
+        WHEN 'REFUNDED' THEN 'возвращён'
+        WHEN 'ON_HOLD' THEN 'на удержании'
+        ELSE p_new_status
+    END;
+
+    -- Проверяем допустимость перехода
     CASE v_old_status
         WHEN 'ожидает оплаты' THEN
-            IF p_new_status NOT IN ('оплачен', 'отменён') THEN
-                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, p_new_status;
+            IF v_new_status_rus NOT IN ('оплачен', 'отменён') THEN
+                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, v_new_status_rus;
             END IF;
         WHEN 'оплачен' THEN
-            IF p_new_status NOT IN ('обрабатывается', 'отменён') THEN
-                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, p_new_status;
+            IF v_new_status_rus NOT IN ('обрабатывается', 'отменён') THEN
+                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, v_new_status_rus;
             END IF;
         WHEN 'обрабатывается' THEN
-            IF p_new_status NOT IN ('подтверждён', 'отменён') THEN
-                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, p_new_status;
+            IF v_new_status_rus NOT IN ('подтверждён', 'отменён') THEN
+                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, v_new_status_rus;
             END IF;
         WHEN 'подтверждён' THEN
-            IF p_new_status NOT IN ('отправлен', 'отменён') THEN
-                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, p_new_status;
+            IF v_new_status_rus NOT IN ('отправлен', 'отменён') THEN
+                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, v_new_status_rus;
             END IF;
         WHEN 'отправлен' THEN
-            IF p_new_status NOT IN ('доставлен', 'возвращён') THEN
-                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, p_new_status;
+            IF v_new_status_rus NOT IN ('доставлен', 'возвращён') THEN
+                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, v_new_status_rus;
             END IF;
         WHEN 'доставлен' THEN
-            IF p_new_status != 'возвращён' THEN
-                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, p_new_status;
+            IF v_new_status_rus != 'возвращён' THEN
+                RAISE EXCEPTION 'Недопустимый переход: % -> %', v_old_status, v_new_status_rus;
             END IF;
         WHEN 'отменён', 'возвращён' THEN
             RAISE EXCEPTION 'Статус "%" является конечным и не может быть изменён', v_old_status;
@@ -491,7 +506,7 @@ BEGIN
     END CASE;
 
     -- Обрабатываем складские операции в зависимости от нового статуса
-    IF p_new_status = 'отменён' AND v_old_status IN ('ожидает оплаты', 'оплачен', 'обрабатывается') THEN
+    IF v_new_status_rus = 'отменён' AND v_old_status IN ('ожидает оплаты', 'оплачен', 'обрабатывается') THEN
         -- Возвращаем резерв на склад
         FOR v_item IN
             SELECT book_id, quantity
@@ -503,7 +518,7 @@ BEGIN
             WHERE book_id = v_item.book_id;
         END LOOP;
 
-    ELSIF p_new_status = 'подтверждён' THEN
+    ELSIF v_new_status_rus = 'подтверждён' THEN
         -- Списываем книги со склада
         FOR v_item IN
             SELECT book_id, quantity
@@ -516,7 +531,7 @@ BEGIN
             WHERE book_id = v_item.book_id;
         END LOOP;
 
-    ELSIF p_new_status = 'возвращён' AND v_old_status IN ('отправлен', 'доставлен') THEN
+    ELSIF v_new_status_rus = 'возвращён' AND v_old_status IN ('отправлен', 'доставлен') THEN
         -- Возвращаем книги на склад
         FOR v_item IN
             SELECT book_id, quantity
@@ -529,16 +544,16 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- Обновляем статус заказа
+    -- Обновляем статус заказа (сохраняем русский статус в БД)
     UPDATE orders
-    SET status = p_new_status
+    SET status = v_new_status_rus
     WHERE order_id = p_order_id;
 
     -- Логируем изменение статуса
     INSERT INTO audit_log (table_name, record_id, operation, old_data, new_data)
     VALUES ('orders', p_order_id, 'STATUS_CHANGE',
             jsonb_build_object('status', v_old_status),
-            jsonb_build_object('status', p_new_status));
+            jsonb_build_object('status', v_new_status_rus));
 
 END;
 $$ LANGUAGE plpgsql;
@@ -649,7 +664,7 @@ BEGIN
         RAISE EXCEPTION 'Заказ с ID % не найден', p_order_id;
     END IF;
 
-    -- Проверяем, можно ли отменить заказ
+    -- Проверяем, можно ли отменить заказ (статусы на русском!)
     IF v_order_status IN ('отменён', 'возвращён', 'доставлен') THEN
         RAISE EXCEPTION 'Невозможно отменить заказ в статусе "%"', v_order_status;
     END IF;
@@ -674,7 +689,7 @@ BEGIN
         WHERE promo_code_id = v_promo_code_id AND used_count > 0;
     END IF;
 
-    -- Меняем статус заказа
+    -- Меняем статус заказа на русский
     UPDATE orders
     SET status = 'отменён'
     WHERE order_id = p_order_id;
@@ -774,46 +789,36 @@ $$ LANGUAGE plpgsql;
 -- ============================================================
 
 -- 14. Начисление бонусных баллов
-CREATE OR REPLACE FUNCTION sp_add_loyalty_points(
+CREATE OR REPLACE PROCEDURE sp_add_loyalty_points(
     p_customer_id BIGINT,
     p_points_amount INTEGER
 )
-RETURNS VOID AS $$
+LANGUAGE plpgsql AS $$
 BEGIN
-    -- Проверяем существование клиента
     IF NOT EXISTS (SELECT 1 FROM customers WHERE customer_id = p_customer_id) THEN
         RAISE EXCEPTION 'Клиент с ID % не найден', p_customer_id;
     END IF;
 
-    -- Проверяем, что сумма положительная
     IF p_points_amount <= 0 THEN
         RAISE EXCEPTION 'Количество начисляемых баллов должно быть положительным. Передано: %',
             p_points_amount;
     END IF;
 
-    -- Начисляем баллы
     UPDATE customers
     SET loyalty_points = loyalty_points + p_points_amount
     WHERE customer_id = p_customer_id;
-
-    -- Логируем операцию
-    INSERT INTO audit_log (table_name, record_id, operation, new_data)
-    VALUES ('customers', p_customer_id, 'ADD_POINTS',
-            jsonb_build_object('points_added', p_points_amount));
-
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- 15. Списание бонусных баллов
-CREATE OR REPLACE FUNCTION sp_spend_loyalty_points(
+CREATE OR REPLACE PROCEDURE sp_spend_loyalty_points(
     p_customer_id BIGINT,
     p_points_amount INTEGER
 )
-RETURNS VOID AS $$
+LANGUAGE plpgsql AS $$
 DECLARE
     v_current_points INTEGER;
 BEGIN
-    -- Получаем текущий баланс баллов
     SELECT loyalty_points INTO v_current_points
     FROM customers
     WHERE customer_id = p_customer_id;
@@ -822,30 +827,21 @@ BEGIN
         RAISE EXCEPTION 'Клиент с ID % не найден', p_customer_id;
     END IF;
 
-    -- Проверяем, что сумма положительная
     IF p_points_amount <= 0 THEN
         RAISE EXCEPTION 'Количество списываемых баллов должно быть положительным. Передано: %',
             p_points_amount;
     END IF;
 
-    -- Проверяем достаточность баллов
     IF v_current_points < p_points_amount THEN
         RAISE EXCEPTION 'Недостаточно баллов для списания. Текущий баланс: %, запрошено: %',
             v_current_points, p_points_amount;
     END IF;
 
-    -- Списываем баллы
     UPDATE customers
     SET loyalty_points = loyalty_points - p_points_amount
     WHERE customer_id = p_customer_id;
-
-    -- Логируем операцию
-    INSERT INTO audit_log (table_name, record_id, operation, new_data)
-    VALUES ('customers', p_customer_id, 'SPEND_POINTS',
-            jsonb_build_object('points_spent', p_points_amount));
-
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- ============================================================
 -- МОДУЛЬ 6: РАБОТА С ПРОМОКОДАМИ
@@ -937,10 +933,10 @@ CREATE OR REPLACE FUNCTION sp_update_inventory(
     p_quantity_change INTEGER
 )
 RETURNS TABLE(
-    quantity INTEGER,
-    reserved_quantity INTEGER,
-    available_quantity INTEGER,
-    last_restocked DATE
+    out_quantity INTEGER,
+    out_reserved_quantity INTEGER,
+    out_available_quantity INTEGER,
+    out_last_restocked DATE
 ) AS $$
 DECLARE
     v_current_quantity INTEGER;
@@ -963,13 +959,14 @@ BEGIN
     END IF;
 
     -- Обновляем количество
-    UPDATE inventory
-    SET quantity = quantity + p_quantity_change,
+    UPDATE inventory inv
+    SET
+        quantity = inv.quantity + p_quantity_change,
         last_restocked = CASE
             WHEN p_quantity_change > 0 THEN CURRENT_DATE
-            ELSE last_restocked
+            ELSE inv.last_restocked
         END
-    WHERE book_id = p_book_id;
+    WHERE inv.book_id = p_book_id;
 
     -- Возвращаем обновлённые остатки
     RETURN QUERY
@@ -1084,7 +1081,11 @@ RETURNS TABLE(
     total_reviews INTEGER,
     verified_avg_rating DECIMAL(3,2),
     verified_reviews INTEGER,
-    rating_distribution JSONB
+    rating_1 INTEGER,
+    rating_2 INTEGER,
+    rating_3 INTEGER,
+    rating_4 INTEGER,
+    rating_5 INTEGER
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -1093,13 +1094,11 @@ BEGIN
         COUNT(*)::INTEGER AS total_reviews,
         ROUND(AVG(CASE WHEN r.is_verified_purchase THEN r.rating ELSE NULL END)::DECIMAL, 2) AS verified_avg_rating,
         COUNT(CASE WHEN r.is_verified_purchase THEN 1 ELSE NULL END)::INTEGER AS verified_reviews,
-        jsonb_build_object(
-            '1', COUNT(CASE WHEN r.rating = 1 THEN 1 ELSE NULL END),
-            '2', COUNT(CASE WHEN r.rating = 2 THEN 1 ELSE NULL END),
-            '3', COUNT(CASE WHEN r.rating = 3 THEN 1 ELSE NULL END),
-            '4', COUNT(CASE WHEN r.rating = 4 THEN 1 ELSE NULL END),
-            '5', COUNT(CASE WHEN r.rating = 5 THEN 1 ELSE NULL END)
-        ) AS rating_distribution
+        COUNT(CASE WHEN r.rating = 1 THEN 1 ELSE NULL END)::INTEGER AS rating_1,
+        COUNT(CASE WHEN r.rating = 2 THEN 1 ELSE NULL END)::INTEGER AS rating_2,
+        COUNT(CASE WHEN r.rating = 3 THEN 1 ELSE NULL END)::INTEGER AS rating_3,
+        COUNT(CASE WHEN r.rating = 4 THEN 1 ELSE NULL END)::INTEGER AS rating_4,
+        COUNT(CASE WHEN r.rating = 5 THEN 1 ELSE NULL END)::INTEGER AS rating_5
     FROM reviews r
     WHERE r.book_id = p_book_id;
 END;
@@ -1199,18 +1198,18 @@ RETURNS TABLE(
     shipment_status VARCHAR,
     shipped_date TIMESTAMP,
     delivered_date TIMESTAMP,
-    estimated_delivery VARCHAR
+    estimated_delivery VARCHAR  -- Меняем TEXT на VARCHAR
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT
         o.order_id,
-        o.status AS order_status,
+        o.status::VARCHAR AS order_status,
         o.order_date,
         o.shipping_address,
         s.carrier,
         s.tracking_number,
-        s.status AS shipment_status,
+        s.status::VARCHAR AS shipment_status,
         s.shipped_date,
         s.delivered_date,
         CASE
@@ -1218,7 +1217,7 @@ BEGIN
             WHEN s.shipped_date IS NOT NULL THEN 'В пути'
             WHEN s.shipment_id IS NOT NULL THEN 'Готовится к отправке'
             ELSE 'Обрабатывается'
-        END AS estimated_delivery
+        END::VARCHAR AS estimated_delivery
     FROM orders o
     LEFT JOIN shipments s ON o.order_id = s.order_id
     WHERE o.order_id = p_order_id;
@@ -1532,9 +1531,9 @@ $$ LANGUAGE plpgsql;
 
 -- Массовое изменение цен
 CREATE OR REPLACE FUNCTION sp_bulk_update_prices(
+    p_percentage_change DECIMAL(5,2),
     p_genre_id BIGINT DEFAULT NULL,
-    p_publisher_id BIGINT DEFAULT NULL,
-    p_percentage_change DECIMAL(5,2)
+    p_publisher_id BIGINT DEFAULT NULL
 )
 RETURNS TABLE(
     books_updated INTEGER,

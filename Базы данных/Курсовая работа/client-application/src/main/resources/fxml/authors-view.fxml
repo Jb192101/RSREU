@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.jedi_bachelor.course_paper_db.client.ui.controllers.AuthorsController"
+      style="-fx-padding: 20; -fx-background-color: white;">
+
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="Поиск авторов..." HBox.hgrow="ALWAYS"/>
+        <Button text="Найти" onAction="#handleSearch"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="addButton" text="Добавить автора" onAction="#handleAdd"/>
+        <Button text="Объединить авторов" onAction="#handleMergeAuthors"/>
+    </HBox>
+
+    <TableView fx:id="authorsTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
+            <TableColumn fx:id="firstNameColumn" text="Имя" prefWidth="150"/>
+            <TableColumn fx:id="lastNameColumn" text="Фамилия" prefWidth="150"/>
+            <TableColumn fx:id="countryColumn" text="Страна" prefWidth="120"/>
+            <TableColumn fx:id="birthDateColumn" text="Дата рождения" prefWidth="120"/>
+            <TableColumn fx:id="biographyColumn" text="Биография" prefWidth="300"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="10">
+        <Button fx:id="editButton" text="Редактировать" onAction="#handleEdit"/>
+        <Button fx:id="deleteButton" text="Удалить" onAction="#handleDelete"/>
+        <Button fx:id="refreshButton" text="Обновить" onAction="#handleRefresh"/>
+    </HBox>
+</VBox>

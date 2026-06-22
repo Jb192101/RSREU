@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.jedi_bachelor.course_paper_db.client.ui.controllers.BooksController"
+      style="-fx-padding: 20; -fx-background-color: white;">
+
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="Поиск книг..." HBox.hgrow="ALWAYS"/>
+        <Button text="Найти" onAction="#handleSearch"/>
+        <Button text="Очистить" onAction="#handleClearSearch"/>
+        <Button text="Массовое изменение цен" onAction="#handleBulkPriceUpdate"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="addButton" text="Добавить книгу" onAction="#handleAdd"/>
+    </HBox>
+
+    <TableView fx:id="booksTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
+            <TableColumn fx:id="isbnColumn" text="ISBN" prefWidth="120"/>
+            <TableColumn fx:id="titleColumn" text="Название" prefWidth="300"/>
+            <TableColumn fx:id="yearColumn" text="Год" prefWidth="80"/>
+            <TableColumn fx:id="priceColumn" text="Цена" prefWidth="100"/>
+            <TableColumn fx:id="genreColumn" text="Жанр" prefWidth="120"/>
+            <TableColumn fx:id="publisherColumn" text="Издательство" prefWidth="150"/>
+            <TableColumn fx:id="pagesColumn" text="Страниц" prefWidth="80"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="10">
+        <Button fx:id="editButton" text="Редактировать" onAction="#handleEdit"/>
+        <Button fx:id="deleteButton" text="Удалить" onAction="#handleDelete"/>
+        <Button fx:id="refreshButton" text="Обновить" onAction="#handleRefresh"/>
+    </HBox>
+</VBox>

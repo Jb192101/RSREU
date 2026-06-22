@@ -31,10 +31,6 @@
                     <tooltip><Tooltip text="Обновить данные"/></tooltip>
                 </Button>
 
-                <Button text="📊" onAction="#openReports">
-                    <tooltip><Tooltip text="Отчёты"/></tooltip>
-                </Button>
-
                 <Button text="ℹ" onAction="#showAboutDialog">
                     <tooltip><Tooltip text="О программе"/></tooltip>
                 </Button>
@@ -56,7 +52,7 @@
                 <Insets top="10" right="5" bottom="10" left="5"/>
             </padding>
 
-            <Label text="НАВИГАЦИЯ"
+            <Label text="КНИГИ И АВТОРЫ"
                    styleClass="menu-section-title"/>
 
             <Button text="📚 Книги"
@@ -81,7 +77,7 @@
 
             <Separator styleClass="menu-separator"/>
 
-            <Label text="РАБОТА С КЛИЕНТАМИ"
+            <Label text="КЛИЕНТЫ И ЗАКАЗЫ"
                    styleClass="menu-section-title"/>
 
             <Button text="👥 Клиенты"
@@ -121,18 +117,13 @@
 
             <Region VBox.vgrow="ALWAYS"/>
 
-            <Separator styleClass="menu-separator"/>
-
-            <Button text="⚙️ Настройки"
-                    styleClass="nav-button"
-                    maxWidth="Infinity"/>
         </VBox>
     </left>
 
     <center>
         <!-- Основная область контента -->
         <StackPane fx:id="contentArea" styleClass="content-area">
-            <Label text="Загрузка..." styleClass="loading-label"/>
+            <Label text="Добро пожаловать! Выберите раздел из меню" styleClass="loading-label"/>
         </StackPane>
     </center>
 

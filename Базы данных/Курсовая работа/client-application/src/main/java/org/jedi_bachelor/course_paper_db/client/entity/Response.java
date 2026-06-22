@@ -2,6 +2,7 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -25,11 +26,13 @@ public class Response {
     @Column(name = "is_verified_purchase")
     private Boolean isVerifiedPurchase = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
+    @ToString.Exclude
     private Client client;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "book_id")
+    @ToString.Exclude
     private Book book;
 }

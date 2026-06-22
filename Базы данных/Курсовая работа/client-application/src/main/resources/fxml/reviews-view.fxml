@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.jedi_bachelor.course_paper_db.client.ui.controllers.ReviewsController"
+      style="-fx-padding: 20; -fx-background-color: white;">
+
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="Поиск отзывов..." HBox.hgrow="ALWAYS"/>
+        <Button text="Найти" onAction="#handleSearch"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="addButton" text="Добавить отзыв" onAction="#handleAdd"/>
+    </HBox>
+
+    <TableView fx:id="reviewsTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
+            <TableColumn fx:id="clientColumn" text="Клиент" prefWidth="200"/>
+            <TableColumn fx:id="bookColumn" text="Книга" prefWidth="250"/>
+            <TableColumn fx:id="ratingColumn" text="Рейтинг" prefWidth="80"/>
+            <TableColumn fx:id="commentColumn" text="Комментарий" prefWidth="300"/>
+            <TableColumn fx:id="dateColumn" text="Дата" prefWidth="150"/>
+            <TableColumn fx:id="verifiedColumn" text="Подтверждён" prefWidth="100"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="10">
+        <Button fx:id="editButton" text="Редактировать" onAction="#handleEdit"/>
+        <Button fx:id="deleteButton" text="Удалить" onAction="#handleDelete"/>
+        <Button fx:id="refreshButton" text="Обновить" onAction="#handleRefresh"/>
+        <Button text="Рейтинг книги" onAction="#handleBookRating"/>
+    </HBox>
+</VBox>

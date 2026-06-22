@@ -11,18 +11,6 @@ import java.util.Optional;
 
 @Repository
 public interface ResponseRepository extends JpaRepository<Response, Long> {
-
-    @Query(value = "SELECT r.*, c.*, b.* FROM reviews r " +
-            "LEFT JOIN customers c ON r.customer_id = c.customer_id " +
-            "LEFT JOIN books b ON r.book_id = b.book_id " +
-            "WHERE r.review_id = :id", nativeQuery = true)
-    Optional<Response> findResponseById(@Param("id") Long id);
-
-    @Query(value = "SELECT r.*, c.*, b.* FROM reviews r " +
-            "LEFT JOIN customers c ON r.customer_id = c.customer_id " +
-            "LEFT JOIN books b ON r.book_id = b.book_id", nativeQuery = true)
-    List<Response> findAllResponses();
-
     @Modifying
     @Query(value = "DELETE FROM reviews WHERE review_id = :id", nativeQuery = true)
     void deleteResponseById(@Param("id") Long id);

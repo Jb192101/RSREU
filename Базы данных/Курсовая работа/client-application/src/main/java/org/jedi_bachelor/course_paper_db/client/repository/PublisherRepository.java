@@ -11,21 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface PublisherRepository extends JpaRepository<Publisher, Long> {
-
-    @Query(value = "SELECT * FROM publishers WHERE publisher_id = :id", nativeQuery = true)
-    Optional<Publisher> findPublisherById(@Param("id") Long id);
-
-    @Query(value = "SELECT * FROM publishers", nativeQuery = true)
-    List<Publisher> findAllPublishers();
-
     @Modifying
     @Query(value = "DELETE FROM publishers WHERE publisher_id = :id", nativeQuery = true)
     void deletePublisherById(@Param("id") Long id);
-
-    @Modifying
-    @Query(value = "UPDATE publishers SET name = :#{#publisher.name}, " +
-            "phone = :#{#publisher.phone}, email = :#{#publisher.email}, " +
-            "address = :#{#publisher.address} " +
-            "WHERE publisher_id = :#{#publisher.id}", nativeQuery = true)
-    void updatePublisher(@Param("publisher") Publisher publisher);
 }

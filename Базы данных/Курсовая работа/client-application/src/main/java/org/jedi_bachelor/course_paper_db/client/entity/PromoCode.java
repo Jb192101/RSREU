@@ -2,6 +2,7 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import org.jedi_bachelor.course_paper_db.client.entity.enums.DiscountType;
 
 import java.math.BigDecimal;
@@ -43,5 +44,6 @@ public class PromoCode {
     private BigDecimal minOrderAmount = BigDecimal.ZERO;
 
     @OneToMany(mappedBy = "promocode")
+    @ToString.Exclude
     private List<Order> orders = new ArrayList<>();
 }

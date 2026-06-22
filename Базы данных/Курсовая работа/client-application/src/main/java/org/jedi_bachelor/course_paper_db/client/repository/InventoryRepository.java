@@ -11,16 +11,6 @@ import java.util.Optional;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<BookRemnant, Long> {
-
-    @Query(value = "SELECT i.*, b.* FROM inventory i " +
-            "LEFT JOIN books b ON i.book_id = b.book_id " +
-            "WHERE i.inventory_id = :id", nativeQuery = true)
-    Optional<BookRemnant> findInventoryById(@Param("id") Long id);
-
-    @Query(value = "SELECT i.*, b.* FROM inventory i " +
-            "LEFT JOIN books b ON i.book_id = b.book_id", nativeQuery = true)
-    List<BookRemnant> findAllInventory();
-
     @Modifying
     @Query(value = "DELETE FROM inventory WHERE inventory_id = :id", nativeQuery = true)
     void deleteInventoryById(@Param("id") Long id);

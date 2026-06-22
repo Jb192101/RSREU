@@ -2,6 +2,7 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -33,9 +34,11 @@ public class Client {
     @Column(name = "loyalty_points", nullable = false)
     private Integer loyaltyPoints = 0;
 
-    @OneToMany(mappedBy = "customer")
+    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<Order> orders = new ArrayList<>();
 
-    @OneToMany(mappedBy = "client")
+    @OneToMany(mappedBy = "client", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<Response> responses = new ArrayList<>();
 }

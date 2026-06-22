@@ -2,6 +2,7 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,13 +21,7 @@ public class Genre {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_genre_id")
-    private Genre parentGenre;
-
-    @OneToMany(mappedBy = "parentGenre")
-    private List<Genre> subGenres = new ArrayList<>();
-
-    @OneToMany(mappedBy = "genre")
+    @OneToMany(mappedBy = "genre", fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<Book> books = new ArrayList<>();
 }

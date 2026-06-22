@@ -2,6 +2,7 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class Author {
     @Column(name = "biography", columnDefinition = "TEXT")
     private String biography;
 
-    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private List<BookAuthor> bookAuthors = new ArrayList<>();
 }

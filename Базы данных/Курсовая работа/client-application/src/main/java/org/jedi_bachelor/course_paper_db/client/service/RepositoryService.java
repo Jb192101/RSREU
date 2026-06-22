@@ -1,6 +1,5 @@
 package org.jedi_bachelor.course_paper_db.client.service;
 
-import lombok.RequiredArgsConstructor;
 import org.jedi_bachelor.course_paper_db.client.entity.*;
 import org.jedi_bachelor.course_paper_db.client.repository.*;
 import org.springframework.stereotype.Service;
@@ -10,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class RepositoryService {
     private final AuthorRepository authorRepository;
@@ -36,6 +34,21 @@ public class RepositoryService {
     private final PublisherRepository publisherRepository;
 
     private final ResponseRepository responseRepository;
+
+    public RepositoryService(AuthorRepository authorRepository, BookAuthorRepository bookAuthorRepository, InventoryRepository bookRemnantRepository, BookRepository bookRepository, ClientRepository clientRepository, DeliveryRepository deliveryRepository, GenreRepository genreRepository, OrderPositionRepository orderPositionRepository, OrderRepository orderRepository, PromoCodeRepository promoCodeRepository, PublisherRepository publisherRepository, ResponseRepository responseRepository) {
+        this.authorRepository = authorRepository;
+        this.bookAuthorRepository = bookAuthorRepository;
+        this.bookRemnantRepository = bookRemnantRepository;
+        this.bookRepository = bookRepository;
+        this.clientRepository = clientRepository;
+        this.deliveryRepository = deliveryRepository;
+        this.genreRepository = genreRepository;
+        this.orderPositionRepository = orderPositionRepository;
+        this.orderRepository = orderRepository;
+        this.promoCodeRepository = promoCodeRepository;
+        this.publisherRepository = publisherRepository;
+        this.responseRepository = responseRepository;
+    }
 
     // ========== Authors ==========
 
@@ -66,15 +79,15 @@ public class RepositoryService {
     }
 
     public Optional<Book> getBookById(Long id) {
-        return this.bookRepository.findBookById(id);
+        return this.bookRepository.findById(id);
     }
 
     public List<Book> getAllBooks() {
-        return this.bookRepository.findAllBooks();
+        return this.bookRepository.findAllWithDetails();
     }
 
     public void updateBook(Book book) {
-        this.bookRepository.updateBook(book);
+        this.bookRepository.save(book);
     }
 
     public void deleteBook(Long id) {
@@ -88,19 +101,19 @@ public class RepositoryService {
     }
 
     public Optional<Client> getClientById(Long id) {
-        return this.clientRepository.findClientById(id);
+        return this.clientRepository.findById(id);
     }
 
     public List<Client> getAllClients() {
-        return this.clientRepository.findAllClients();
+        return this.clientRepository.findAll();
     }
 
     public void updateClient(Client client) {
-        this.clientRepository.updateClient(client);
+        this.clientRepository.save(client);
     }
 
     public void deleteClient(Long id) {
-        this.clientRepository.deleteClientById(id);
+        this.clientRepository.deleteById(id);
     }
 
     // ========== BookAuthors ==========
@@ -162,11 +175,11 @@ public class RepositoryService {
     }
 
     public void updateGenre(Genre genre) {
-        this.genreRepository.save(genre);
+        this.genreRepository.updateGenre(genre);
     }
 
     public void deleteGenre(Long id) {
-        this.genreRepository.deleteById(id);
+        this.genreRepository.deleteGenreById(id);
     }
 
     // ========== Orders ==========
@@ -180,7 +193,7 @@ public class RepositoryService {
     }
 
     public List<Order> getAllOrders() {
-        return this.orderRepository.findAll();
+        return this.orderRepository.findAllWithDetails();
     }
 
     public void updateOrder(Order order) {
@@ -294,10 +307,10 @@ public class RepositoryService {
     }
 
     public void updateDelivery(Delivery delivery) {
-        this.deliveryRepository.save(delivery);
+        this.deliveryRepository.updateDelivery(delivery);
     }
 
     public void deleteDelivery(Long id) {
-        this.deliveryRepository.deleteById(id);
+        this.deliveryRepository.deleteDeliveryById(id);
     }
 }

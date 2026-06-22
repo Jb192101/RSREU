@@ -3,6 +3,7 @@ package org.jedi_bachelor.course_paper_db.client.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 
@@ -12,19 +13,19 @@ import java.io.Serializable;
 @Data
 public class BookAuthor {
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @ToString.Exclude
     @JoinColumn(name = "author_id", nullable = false)
     private Author author;
 
     @Column(name = "author_order", nullable = false)
     private Integer authorOrder = 1;
 
-    // Составной ключ
     @EqualsAndHashCode
     public static class BookAuthorId implements Serializable {
         private Long book;

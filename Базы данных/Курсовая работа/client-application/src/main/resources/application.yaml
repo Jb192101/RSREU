@@ -2,7 +2,17 @@ spring:
   application:
     name: client-app
   datasource:
-    url: ${BOOK_DB_URL}
-    username: ${BOOK_DB_USER}
-    password: ${BOOK_DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5433/postgres_db
+    username: postgres
     driver-class-name: org.postgresql.Driver
+  jpa:
+    database: POSTGRESQL
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        show_sql: true
+
+server:
+  port: 8081

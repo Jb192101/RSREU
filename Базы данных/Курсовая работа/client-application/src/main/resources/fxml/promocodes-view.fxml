@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.jedi_bachelor.course_paper_db.client.ui.controllers.PromoCodesController"
+      style="-fx-padding: 20; -fx-background-color: white;">
+
+    <HBox spacing="10">
+        <TextField fx:id="searchField" promptText="Поиск промокодов..." HBox.hgrow="ALWAYS"/>
+        <Button text="Найти" onAction="#handleSearch"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="addButton" text="Добавить промокод" onAction="#handleAdd"/>
+        <Button text="Проверить промокод" onAction="#handleValidate"/>
+    </HBox>
+
+    <TableView fx:id="promoCodesTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
+            <TableColumn fx:id="codeColumn" text="Код" prefWidth="120"/>
+            <TableColumn fx:id="discountTypeColumn" text="Тип скидки" prefWidth="100"/>
+            <TableColumn fx:id="discountValueColumn" text="Значение" prefWidth="100"/>
+            <TableColumn fx:id="validFromColumn" text="Действует с" prefWidth="120"/>
+            <TableColumn fx:id="validToColumn" text="Действует до" prefWidth="120"/>
+            <TableColumn fx:id="usedCountColumn" text="Использовано" prefWidth="100"/>
+            <TableColumn fx:id="maxUsesColumn" text="Макс. использований" prefWidth="120"/>
+            <TableColumn fx:id="minOrderColumn" text="Мин. сумма" prefWidth="100"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="10">
+        <Button fx:id="editButton" text="Редактировать" onAction="#handleEdit"/>
+        <Button fx:id="deleteButton" text="Удалить" onAction="#handleDelete"/>
+        <Button fx:id="refreshButton" text="Обновить" onAction="#handleRefresh"/>
+    </HBox>
+</VBox>
